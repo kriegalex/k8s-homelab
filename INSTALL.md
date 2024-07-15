@@ -15,9 +15,7 @@ One of the worker will run a Plex server with hardware transcoding on an Intel A
 
 ## Control plane installation
 
-### Prerequisites
-
-#### Disable SWAP
+### Disable SWAP
 
 ```
 sudo swapoff -a
@@ -29,17 +27,65 @@ To make it permanent, edit the `/etc/fstab` if needed (comment line with swap im
 sudo nano /etc/fstab
 ```
 
-#### Enable IPv4 packet forwarding
+### Setup kernel parameters
+
+Since we are using Ubuntu 22, we need to load br_netfilter and make sure it persists across reboots.
+
+```
+sudo tee /etc/modules-load.d/containerd.conf <<EOF
+br_netfilter
+EOF
+sudo modprobe br_netfilter
+```
 
 ```
 # sysctl params required by setup, params persist across reboots
 cat <<EOF | sudo tee /etc/sysctl.d/k8s.conf
+net.bridge.bridge-nf-call-ip6tables = 1
+net.bridge.bridge-nf-call-iptables = 1
 net.ipv4.ip_forward = 1
 EOF
 
 # Apply sysctl params without reboot
 sudo sysctl --system
 ```
+
+#### Understanding the Parameters
+##### net.bridge.bridge-nf-call-ip6tables
+This parameter enables the bridge network driver to pass IPv6 traffic to ip6tables for processing. In simpler terms, it allows ip6tables to filter traffic that is bridged (i.e., passed from one network interface to another without being processed by the host's IP stack).
+
+##### net.bridge.bridge-nf-call-iptables
+Similarly, this parameter enables the bridge network driver to pass IPv4 traffic to iptables for processing. This allows iptables to filter bridged IPv4 traffic.
+
+##### net.ipv4.ip_forward
+The net.ipv4.ip_forward parameter controls whether the Linux kernel forwards IPv4 packets. By default, a Linux machine acts as a host, not a router, and does not forward IP packets from one network interface to another. This parameter must be enabled if you want your Linux machine to act as a router, forwarding packets between different network interfaces.
+
+#### Scenario Explanation
+In a Kubernetes cluster, suppose you have a service that exposes port 6379 (commonly used by Redis) and allows pods to communicate with this service.
+
+1. Service Definition:
+
+You define a Kubernetes service that maps port 6379 to one or more backend pods.
+Kubernetes creates iptables rules to handle this mapping, ensuring that traffic destined for the service IP on port 6379 is correctly forwarded to the appropriate pods.
+
+2. Bridged Traffic:
+
+Pods communicate over the network using virtual network interfaces (veth pairs) and bridges. For example, a pod on Node A might want to communicate with the Redis service, which is mapped to port 6379.
+
+##### Importance of net.bridge.bridge-nf-call-iptables
+
+What Happens When This Parameter Is Set (net.bridge.bridge-nf-call-iptables = 1):
+
+- Packet Handling:
+  - When a packet destined for port 6379 arrives at the network bridge interface on the node, the Linux kernel passes this packet to iptables for processing.
+  - Iptables applies the rules defined by Kubernetes, such as NAT and port forwarding rules, to ensure the packet is routed correctly to the backend pod running Redis.
+
+What Happens When This Parameter Is Not Set (net.bridge.bridge-nf-call-iptables = 0):
+
+- Packet Handling:
+  - When a packet destined for port 6379 arrives at the network bridge interface, it bypasses iptables because the kernel is not configured to pass bridged traffic to iptables.
+  - The packet does not get processed by the iptables rules, meaning the necessary NAT and port forwarding rules are not applied.
+  - As a result, the packet may not reach the intended pod running Redis, leading to communication failures and service disruptions.
 
 ### Install the container runtime
 
