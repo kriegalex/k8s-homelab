@@ -1,0 +1,59 @@
+# image:
+#   tag: v1.108.0 # v1.106.1 by default
+
+immich:
+  persistence:
+    library:
+      existingClaim: immich-library-pvc
+
+# server:
+#   service:
+#     main:
+#       type: LoadBalancer
+
+machine-learning:
+  persistence:
+    cache:
+      existingClaim: immich-machine-learning-cache
+
+postgresql:
+  enabled: true
+  primary:
+    persistence:
+      enabled: true
+      size: 10Gi
+      accessModes:
+        - ReadWriteOnce  # or ReadWriteMany, depending on your requirement
+      storageClass: ""  # Specify storage class if needed, leave empty if not using
+    affinity:
+      nodeAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          nodeSelectorTerms:
+            - matchExpressions:
+                - key: node-role.kubernetes.io/control-plane
+                  operator: DoesNotExist
+
+redis:
+  enabled: true
+  master:
+    persistence:
+      enabled: true
+      size: 10Gi
+      accessModes:
+        - ReadWriteOnce  # or ReadWriteMany, depending on your requirement
+      storageClass: ""  # Specify storage class if needed, leave empty if not using
+    affinity:
+      nodeAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          nodeSelectorTerms:
+            - matchExpressions:
+                - key: node-role.kubernetes.io/control-plane
+                  operator: DoesNotExist
+
+affinity:
+  nodeAffinity:
+    requiredDuringSchedulingIgnoredDuringExecution:
+      nodeSelectorTerms:
+        - matchExpressions:
+            - key: node-role.kubernetes.io/control-plane
+              operator: DoesNotExist
