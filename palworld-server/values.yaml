@@ -1,0 +1,50 @@
+replicaCount: 1
+
+image:
+  repository: thijsvanloef/palworld-server-docker
+  pullPolicy: IfNotPresent
+
+service:
+  type: LoadBalancer
+  ports:
+    - name: server
+      port: 8211
+      protocol: UDP
+      targetPort: server
+    - name: query
+      port: 27015
+      protocol: UDP
+      targetPort: query
+
+env:
+  ADMIN_PASSWORD: ""
+
+persistence:
+  enabled: true
+  accessMode: ReadWriteOnce
+  size: 12Gi
+
+secret:
+  rconPassword: ""
+
+configmap:
+  PUID: "1000"
+  PGID: "1000"
+  PORT: "8211"
+  PLAYERS: "16"
+  SERVER_PASSWORD: ""
+  MULTITHREADING: "true"
+  RCON_ENABLED: "true"
+  RCON_PORT: "25575"
+  TZ: "UTC"
+  COMMUNITY: "false"
+  SERVER_NAME: "Serveur Ramelemouche"
+  SERVER_DESCRIPTION: ""
+
+resources:
+  requests:
+    memory: "32Gi"
+    cpu: "4000m"
+  limits:
+    memory: "32Gi"
+    cpu: "4000m"

@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Release.Name }}-cm
+data:
+  PUID: "{{ .Values.configmap.PUID }}"
+  PGID: "{{ .Values.configmap.PGID }}"
+  PORT: "{{ .Values.configmap.PORT }}"
+  PLAYERS: "{{ .Values.configmap.PLAYERS }}"
+  SERVER_PASSWORD: "{{ .Values.configmap.SERVER_PASSWORD }}"
+  MULTITHREADING: "{{ .Values.configmap.MULTITHREADING }}"
+  RCON_ENABLED: "{{ .Values.configmap.RCON_ENABLED }}"
+  RCON_PORT: "{{ .Values.configmap.RCON_PORT }}"
+  TZ: "{{ .Values.configmap.TZ }}"
+  COMMUNITY: "{{ .Values.configmap.COMMUNITY }}"
+  SERVER_NAME: "{{ .Values.configmap.SERVER_NAME }}"
+  SERVER_DESCRIPTION: "{{ .Values.configmap.SERVER_DESCRIPTION }}"
