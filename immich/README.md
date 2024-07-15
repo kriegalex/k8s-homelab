@@ -12,6 +12,12 @@ Make sure NFS tools are installed on all nodes
 sudo apt-get -y install nfs-common
 ```
 
+## Namespace
+
+```
+ kubectl create namespace immich 
+```
+
 ## Redis persistence
 
 ```
@@ -51,6 +57,8 @@ kubectl create -f immich-ml-data-pv.yaml -f immich-ml-data-pvc.yaml -n immich
 ## Installation
 
 ```
+helm repo add immich https://immich-app.github.io/immich-charts
+helm repo update
 helm install --create-namespace --namespace immich immich immicharts/charts/immich -f custom-values.yaml
 ```
 
