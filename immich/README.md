@@ -59,7 +59,10 @@ kubectl create -f immich-ml-data-pv.yaml -f immich-ml-data-pvc.yaml -n immich
 ```
 helm repo add immich https://immich-app.github.io/immich-charts
 helm repo update
-helm install --create-namespace --namespace immich immich immicharts/charts/immich -f custom-values.yaml
+```
+
+```
+helm install --namespace immich immich immich/immich -f custom-values.yaml
 ```
 
 ## Uninstall
