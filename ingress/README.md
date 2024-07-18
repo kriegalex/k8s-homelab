@@ -97,8 +97,10 @@ spec:
 Create a secret for Route53 access:
 
 ```
-kubectl create secret generic route53-secret --from-literal=secret-access-key=your-secret-access-key
+kubectl -n cert-manager create secret generic route53-secret --from-literal=secret-access-key=your-secret-access-key
 ```
+
+! Do not skip the namespace if you installed cert-manager in a namespace !
 
 Apply this configuration:
 
