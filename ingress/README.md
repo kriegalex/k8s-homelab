@@ -108,6 +108,34 @@ Create a secret for Route53 access:
 kubectl create secret generic route53-secret --from-literal=secret-access-key=your-secret-access-key
 ```
 
+### Testing
+
+Before going any further, let's test that everything is working as expected:
+
+```
+kubectl create deployment demo --image=httpd --port=80
+kubectl expose deployment demo
+```
+
+If you followed the main [INSTALL.md](../INSTALL.md) from this repository, you should have MetalLB acting as a load balancer, so no need to do a port forwarding.
+
+```
+kubectl create ingress demo --class=nginx \
+  --rule="www.demo.io/*=demo:80"
+```
+
+(optional) If you don't have a load balancer:
+
+```
+kubectl port-forward --namespace=ingress-nginx service/ingress-nginx-controller 8080:80
+```
+
+(optional) Don't forget to modify or setup any port forwarding on your homelab router, so that the port 80 is forwarded to the IP of the ingress-nginx service. You can check the IP with the command below. The field <EXTERNAL-IP> should be filled for `ingress-nginx-controller`. Otherwise, your MetalLB may not be configured correctly.
+
+```
+kubectl -n ingress-nginx get svc ingress-nginx-controller
+```
+
 ### Migrate Nginx Proxy Manager Configurations
 
 Convert your Nginx Proxy Manager configurations to Kubernetes Ingress resources. Here is an example:
