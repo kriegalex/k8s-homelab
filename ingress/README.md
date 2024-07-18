@@ -153,12 +153,13 @@ After some time, the certificate should be ready to use. To check that the certi
 kubectl get certificates
 ```
 
-A certificate `demo-io-tls` should appear in the list with READY state True. You can troubleshoot any issues by looking at the CertificateRequests and Orders. You can also look at the status of the ClusterIssuer:
+A certificate `demo-io-tls` should appear in the list with READY state True. You can troubleshoot any issues by looking at the CertificateRequests, Orders, ClusterIssuer or look at the logs of the cert-manager pod:
 
 ```
 kubectl get certificaterequests
 kubectl get orders
 kubectl describe clusterissuer letsencrypt-prod
+kubectl -n cert-manager logs cert-manager-XXXX-YY
 ```
 
 You should then be able to see the "It works!" page when you connect to https://www.demo.io/.
