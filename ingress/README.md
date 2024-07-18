@@ -94,18 +94,16 @@ spec:
             key: secret-access-key
 ```
 
-Apply this configuration:
-
-```
-kubectl apply -f cluster-issuer.yaml
-```
-
-### Create Kubernetes Secrets for Route53
-
 Create a secret for Route53 access:
 
 ```
 kubectl create secret generic route53-secret --from-literal=secret-access-key=your-secret-access-key
+```
+
+Apply this configuration:
+
+```
+kubectl apply -f cluster-issuer.yaml
 ```
 
 ### Testing
@@ -124,6 +122,8 @@ kubectl create ingress demo --class=nginx \
   --rule="www.demo.io/*=demo:80"
 ```
 
+You should then be able to see the "It works!" page when you connect to http://www.demo.io/.
+
 (optional) If you don't have a load balancer:
 
 ```
@@ -134,6 +134,41 @@ kubectl port-forward --namespace=ingress-nginx service/ingress-nginx-controller 
 
 ```
 kubectl -n ingress-nginx get svc ingress-nginx-controller
+```
+
+#### HTTPS
+
+We can also test HTTPS using [the Ingress demo-io-https](./test-https.yaml). Please modify it so that it matches your domain (not demo.io).
+
+```
+kubectl delete ingress demo
+kubectl apply -f test-https.yaml
+```
+
+After some time, the certificate should be ready to use. To check that the certificate was generated correctly:
+
+```
+kubectl get certificates
+```
+
+A certificate `demo-io-tls` should appear in the list with READY state True. You can troubleshoot any issues by looking at the CertificateRequests and Orders. You can also look at the status of the ClusterIssuer:
+
+```
+kubectl get certificaterequests
+kubectl get orders
+kubectl describe clusterissuer letsencrypt-prod
+```
+
+You should then be able to see the "It works!" page when you connect to https://www.demo.io/.
+
+(optional) Modify your networking config for HTTPS.
+
+#### Clean testing resources
+
+```
+kubectl delete -f test-https.yaml
+kubectl delete deployment demo
+kubectl delete svc demo
 ```
 
 ### Migrate Nginx Proxy Manager Configurations

@@ -5,8 +5,9 @@ metadata:
   annotations:
     cert-manager.io/cluster-issuer: "letsencrypt-prod"
 spec:
+  ingressClassName: nginx
   rules:
-  - host: demo.io
+  - host: www.demo.io
     http:
       paths:
       - path: /
@@ -15,8 +16,8 @@ spec:
           service:
             name: demo
             port:
-              number: 443
+              number: 80
   tls:
   - hosts:
-    - demo.io
+    - www.demo.io
     secretName: demo-io-tls
