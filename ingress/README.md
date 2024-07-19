@@ -182,10 +182,10 @@ Nginx Proxy Manager Config:
 
 ```
 server {
-    listen 80;
-    server_name example.com;
+    listen PORT;
+    server_name service.example.com;
     location / {
-        proxy_pass http://your-service:port;
+        proxy_pass http://your-service-ip:PORT;
     }
 }
 ```
@@ -196,12 +196,12 @@ Kubernetes Ingress Resource:
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: example-ingress
+  name: ingress-service
   annotations:
     cert-manager.io/cluster-issuer: "letsencrypt-prod"
 spec:
   rules:
-  - host: example.com
+  - host: service.example.com
     http:
       paths:
       - path: /
@@ -210,11 +210,11 @@ spec:
           service:
             name: your-service
             port:
-              number: your-port
+              number: PORT
   tls:
   - hosts:
-    - example.com
-    secretName: example-com-tls
+    - service.example.com
+    secretName: service-tls
 ```
 
 Please pay attention to the annotation and the secretName !
@@ -222,14 +222,38 @@ Please pay attention to the annotation and the secretName !
 Apply the Ingress resource:
 
 ```
-kubectl apply -f example-ingress.yaml
+kubectl apply -f ingress-service.yaml
 ```
 
-### Verify and Test
+(optional) If your service is running outside of the kubernetes cluster, you don't have any service name to point to. In that scenario, you need to create an external service and an endpoint for kubernetes to know where to point that domain to:
 
-1. DNS: Ensure your DNS is pointing to the Nginx Ingress Controller's external IP.
-2. Certificates: Verify that certificates are issued and served correctly.
-3. Access: Test accessing your services through the Ingress.
+```
+apiVersion: v1
+kind: Service
+metadata:
+  name: your-service
+  namespace: default
+spec:
+  ports:
+  - protocol: TCP
+    port: PORT
+    targetPort: PORT
+
+---
+
+apiVersion: v1
+kind: Endpoints
+metadata:
+  name: your-service
+  namespace: default
+subsets:
+  - addresses:
+      - ip: your-service-ip
+    ports:
+      - port: PORT
+```
+
+You can find some concrete examples in the subfolders (plex, ...).
 
 ### Conclusion
 
@@ -241,7 +265,5 @@ By following these steps, you have migrated from Nginx Proxy Manager to using a 
 2. Install Nginx Ingress Controller: Route traffic within your cluster.
 3. Install Cert-Manager: Automate SSL certificate management.
 4. Create ClusterIssuer and Secrets: For AWS Route53.
-5. Migrate Configurations: Convert Nginx Proxy Manager configurations to Kubernetes Ingress resources.
-6. Verify and Test: Ensure everything is working correctly.
-
-By leveraging Kubernetes and its ecosystem, you can achieve a more robust, scalable, and automated infrastructure.
+5. Verify and Test: Ensure everything is working correctly.
+6. Migrate Configurations: Convert Nginx Proxy Manager configurations to Kubernetes Ingress resources.
