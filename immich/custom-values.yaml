@@ -7,9 +7,14 @@ immich:
       existingClaim: immich-library-pvc
 
 server:
-  service:
+  # Uncomment this if you don't have an ingress in your Kubernetes cluster 
+  # and need an external IP for the immich service
+  # service:
+  #   main:
+  #     type: LoadBalancer
+  ingress:
     main:
-      type: LoadBalancer
+      enabled: false # prefer using an external Ingress definition
 
 machine-learning:
   persistence:
