@@ -65,6 +65,12 @@ helm repo update
 helm install --namespace immich immich immich/immich -f custom-values.yaml
 ```
 
+(optional) If you have followed the [ingress installation](../ingress/README.md), you can also add the ingress for immich after changing the domain name in the file:
+
+```
+kubectl create -f ingress-immich.yaml
+```
+
 ## Uninstall
 
 ```
