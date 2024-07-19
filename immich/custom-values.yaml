@@ -1,5 +1,5 @@
 image:
-  tag: v1.108.0 # v1.106.1 by default
+  tag: v1.109.2 # v1.106.1 by default
 
 immich:
   persistence:
