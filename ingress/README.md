@@ -49,6 +49,18 @@ helm upgrade --set controller.service.externalTrafficPolicy=Local \
 
 This command installs the Nginx Ingress Controller. To learn about externalTrafficPolicy, please check [this documentation](https://metallb.universe.tf/usage/#traffic-policies) or [this one](https://kubernetes.github.io/ingress-nginx/user-guide/retaining-client-ipaddress/).
 
+(optional) If you plan to use server-snippet annotations in Ingress resources, you must add another setting:
+
+```
+helm upgrade --set controller.service.externalTrafficPolicy=Local \
+  --set controller.allowSnippetAnnotations=true \
+  --install ingress-nginx ingress-nginx \
+  --repo https://kubernetes.github.io/ingress-nginx \
+  --namespace ingress-nginx --create-namespace
+```
+
+This annotation is used for example [by Nextcloud](https://github.com/nextcloud/helm/blob/main/charts/nextcloud/values.yaml).
+
 To see all the available values that you can set:
 
 ```
