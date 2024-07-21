@@ -238,16 +238,34 @@ Don't forget to stop the server before doing the backup. The location of the lib
 In the custom values, you can enable the script that will wait for you to copy an archive named `pms.tgz`. First, copy it to the pod using a different name:
 
 ```
-kubectl cp pms.tgz <namespace>/<podname>:/pms.tgz.up -c <release name>-pms-chart-pms-init
+kubectl cp pms.tgz plex-media-server-0:/pms.tgz.up -c plex-media-server-pms-init
 ```
 
 Then, move it so it has the proper name:
 
 ```
-kubectl exec -n <namespace> --stdin --tty <pod>  -c <release name>-pms-chart-pms-init h  -- mv /pms.tgz.up /pms.tgz
+kubectl exec --stdin --tty plex-media-server-0 -c plex-media-server-pms-init h -- mv /pms.tgz.up /pms.tgz
 ```
 
 As soon, as you move it, the script should start processing it.
+
+#### I/O timeout error
+
+If you have an "i/o timeout" error while using `kubectl cp`, consider copying the archive directly onto the plex worker node.
+
+From the worker node:
+
+```
+# adapt it if you modified the PersistentVolume for plex
+cd /mnt/pms-config
+sudo scp user@IP:/mnt/user/backup/plex/pms.tgz .
+```
+
+From the control plane:
+
+```
+kubectl exec --stdin --tty plex-media-server-0 -c plex-media-server-pms-init h -- mv /config/pms.tgz /pms.tgz
+```
 
 ## Plex configuration
 
