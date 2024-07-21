@@ -361,43 +361,6 @@ Check your BIOS/UEFI settings to see what can be enabled. In my setup, I have se
 - SR-IOV: enabled (more details [here](https://docs.nvidia.com/networking/display/mlnxofedv590560125/single+root+io+virtualization+(sr-iov))
 - Resizable BAR : enabled (free performance for the GPU)
 
-#### Install the plugin on the cluster
-
-[Instructions here](https://intel.github.io/intel-device-plugins-for-kubernetes/cmd/gpu_plugin/README.html#installation).
-
-Deploy GPU plugin with the help of NFD (Node Feature Discovery). It detects the presence of Intel GPUs and labels them accordingly. GPU plugin’s node selector is used to deploy plugin to nodes which have such a GPU label.
-```
-kubectl apply -k 'https://github.com/intel/intel-device-plugins-for-kubernetes/deployments/nfd?ref=v0.30.0'
-kubectl apply -k 'https://github.com/intel/intel-device-plugins-for-kubernetes/deployments/nfd/overlays/node-feature-rules?ref=v0.30.0'
-kubectl apply -k 'https://github.com/intel/intel-device-plugins-for-kubernetes/deployments/gpu_plugin/overlays/nfd_labeled_nodes?ref=v0.30.0'
-```
-
-You can verify that the plugin has been installed on the expected nodes by searching for the relevant resource allocation status on the nodes:
-```
-kubectl get nodes -o=jsonpath="{range .items[*]}{.metadata.name}{'\n'}{' i915: '}{.status.allocatable.gpu\.intel\.com/i915}{'\n'}"
-```
-
-**(IMPORTANT) Check the label of this ARC gpu for pod affinity:**
-
-```
-kubectl describe node plex
-```
-
-Output example:
-```
-Labels:             beta.kubernetes.io/arch=amd64
-                    beta.kubernetes.io/os=linux
-                    gpu.intel.com/device-id.0300-56a5.count=1
-                    gpu.intel.com/device-id.0300-56a5.present=true
-                    gpu.intel.com/family=A_Series
-                    intel.feature.node.kubernetes.io/gpu=true
-                    kubernetes.io/arch=amd64
-                    kubernetes.io/hostname=plex
-                    kubernetes.io/os=linux
-```
-
-We want to know the ID of our GPU, in this example `0300-56a5`. This will be useful for the [custom values](./plex/custom-values.yaml) during the [Plex installation](./plex/README.md).
-
 ## Home networking
 
 ### Static routing
