@@ -8,7 +8,17 @@ Follow the main [INSTALL.md](../INSTALL.md) to install a worker node.
 
 Then, instead of using `kubeadm init`, you use the `kubeadm join` command that was created during the install of the control plane. 
 
-(optional) To recreate a new `kubeadm join` command, use:
+(optional) If you forgot the join command, or if the token expired, you can recreate a token. An expired token will result in the `kubeadm join` command to appear as stuck. You can check what is going on by adding `--v=2` at the end of the command:
+
+```
+sudo kubeadm join 10.0.0.10:6443 --token TOKEN --discovery-token-ca-cert-hash SHA --v=2
+```
+
+An expired token may give the following error:
+
+> Retrying due to error: could not find a JWS signature in the cluster-info ConfigMap for token ID "TOKEN"
+
+To recreate a new `kubeadm join` command, use:
 
 ```
 # On the control plane node
