@@ -140,6 +140,23 @@ Labels:             beta.kubernetes.io/arch=amd64
 
 We want to know the ID of our GPU, in this example `0300-56a5`. This will be useful for the [custom values](./plex/custom-values.yaml) during the [Plex installation](./plex/README.md).
 
+#### (optional) Verify the plugin installation
+
+On Ubuntu, install the common build package that will have `make` & Cie tools:
+
+```
+sudo apt-get install -y build-essential
+```
+
+Clone the intel repository:
+
+```
+git clone https://github.com/intel/intel-device-plugins-for-kubernetes.git
+cd intel-device-plugins-for-kubernetes/
+```
+
+
+
 ## Installation
 
 1. Add the Plex helm repo:
@@ -157,7 +174,6 @@ You can check an [example here](./custom-values.yaml).
 
 3. Create the pms-config [PersistentVolume](./plex-pv.yaml):
 
-plex-pv.yaml
 ```
 apiVersion: v1
 kind: PersistentVolume
@@ -174,7 +190,7 @@ spec:
  ```
  
  ```
- kubectl apply -f pms-pv.yaml
+ kubectl apply -f plex-pv.yaml
  ```
  
  4. Install Plex
