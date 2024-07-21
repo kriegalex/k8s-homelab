@@ -218,6 +218,13 @@ Other scenarios are possible, but outside the scope of this guide.
 
 ### Import an existing library
 
+If you used the script in the helm custom values, plex pod should be in an Init status:
+
+```
+NAME                                               READY   STATUS     RESTARTS   AGE
+plex-media-server-0                                0/1     Init:0/1   0          55s
+```
+
 (optional) Backup the existing library:
 
 ```
