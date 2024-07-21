@@ -127,6 +127,11 @@ sudo mv containerd.service /usr/local/lib/systemd/system/
 As per the [kubernetes doc](https://kubernetes.io/docs/setup/production-environment/container-runtimes/), if the cgroup is provided by `systemd`, one setting must be changed in config.toml:
 
 ```
+sudo nano /etc/containerd/config.toml
+```
+
+You must look for the `runc.options` portion: 
+```
 [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc]
   ...
   [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc.options]
