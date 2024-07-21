@@ -13,6 +13,23 @@ One of the worker will run a Plex server with hardware transcoding on an Intel A
 - Fast local storage for Plex metadata
 - Simple home networking
 
+## (optional) ZSH
+
+This is useful for any node, even outside kubernetes:
+
+```
+sudo apt-get install -y zsh zsh-syntax-highlighting
+sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
+```
+
+In the new ZSH shell:
+```
+git clone https://github.com/zsh-users/zsh-autosuggestions ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-autosuggestions
+echo "source /usr/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh" >> ~/.zshrc
+sed -i 's/^ZSH_THEME="[^"]*"/ZSH_THEME="lukerandall"/' ~/.zshrc
+sed -i '/^plugins=(git)/c\plugins=(\n        git\n        zsh-autosuggestions\n        helm\n        kubectl\n)' ~/.zshrc
+```
+
 ## Control plane installation
 
 ### Disable SWAP
