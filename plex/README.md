@@ -179,39 +179,6 @@ Platform #0: Intel(R) OpenCL HD Graphics
  `-- Device #0: Intel(R) Graphics [0x56a6]
 ```
 
-#### Enable GuC
-
-Use this command to activate GuC in the kernel config:
-
-```
-echo "options i915 enable_guc=2" | sudo tee /etc/modprobe.d/i915.conf
-sudo update-initramfs -u
-```
-
-#### GRUB changes for i915
-
-First, identify which GPU ID is right for you using the Intel Hardware Table. In my case, it is 56a5 for an ARC A380.
-
-Then, we will add some default parameters to GRUB bootloader:
-```
-sudo nano /etc/default/grub
-```
-
-On Ubuntu 22.04.3 LTS, my GRUB_CMDLINE_LINUX_DEFAULT was empty. I modified it with:
-
-```
-GRUB_CMDLINE_LINUX_DEFAULT="i915.enable_hangcheck=0 pci=realloc=off i915.force_probe=56a5"
-```
-
-Please note the use of my GPU ID in `i915.force_probe=`.
-
-**Reboot:**
-
-```
-sudo update-grub
-sudo reboot
-```
-
 #### Install the plugin on the cluster
 
 [Instructions here](https://intel.github.io/intel-device-plugins-for-kubernetes/cmd/gpu_plugin/README.html#installation).
@@ -249,48 +216,11 @@ Labels:             beta.kubernetes.io/arch=amd64
 
 We want to know the ID of our GPU, in this example `0300-56a5`. This will be useful for the [custom values](./plex/custom-values.yaml) during the [Plex installation](./plex/README.md).
 
-#### (optional) Verify the plugin installation
+#### Verify the cluster plugin
 
-For Ubuntu, on the control plane node, install the common build package that will have `make` & Cie tools:
+Follow [these instructions](https://intel.github.io/intel-device-plugins-for-kubernetes/cmd/gpu_plugin/README.html#testing-and-demos) to run a docker image inside your cluster that will test that the Intel GPU is working as intended.
 
-```
-sudo apt-get install -y build-essential
-```
-
-Clone the intel repository:
-
-```
-git clone https://github.com/intel/intel-device-plugins-for-kubernetes.git
-cd intel-device-plugins-for-kubernetes/
-```
-
-Install docker engine:
-
-```
-# Add Docker's official GPG key:
-sudo apt-get update
-sudo apt-get install ca-certificates curl
-sudo install -m 0755 -d /etc/apt/keyrings
-sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
-sudo chmod a+r /etc/apt/keyrings/docker.asc
-
-# Add the repository to Apt sources:
-echo \
-  "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu \
-  $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | \
-  sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
-sudo apt-get update
-```
-
-```
-sudo apt-get install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
-```
-
-Verify the docker installation with an hello-world image:
-
-```
-sudo docker run hello-world
-```
+You need to [install Docker](https://docs.docker.com/engine/install/) and the `make` tools for your OS (`apt install build-essential` on Ubuntu/Debian).
 
 ## Installation
 
