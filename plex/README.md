@@ -270,6 +270,13 @@ kubectl exec --stdin --tty plex-media-server-0 -c plex-media-server-pms-init h -
 ## Plex configuration
 
 ### Custom URL
-To be able to distinguish from local to distant access to the server, we must configure Plex to use a custom URL: Settings -> Network -> Custom URL. This is also why I don't use a simple NodePort for the plex service. Otherwise, all the traffic looks like it is coming from 10.201.0.1 (the gateway of my pod CIDR, see above).
 
-I'm not totally sure you need both the custom URL AND the external access using port forwarding, but it started to work in my setup after both were setup.
+If you have a kubernetes cluster with nginx as ingress (or another ingress), as well as cert-manager (see [here](../ingress/README.md)), you can setup a custom URL for Plex instead of relying on the traditional forwarding of port 32400.
+
+In that case, the plex service doesn't need to be of type LoadBalancer, and you can enable the ingress portion of the plex helm configuration.
+
+Don't forget to setup the plex server with the custom URL under `Settings > Server > Network > Custom server access URLs`:
+
+```
+https://plex.mycustomdomain.com:443
+```
