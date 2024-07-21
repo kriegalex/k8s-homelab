@@ -145,6 +145,12 @@ sudo systemctl daemon-reload
 sudo systemctl enable --now containerd
 ```
 
+Reboot before installing Kubernetes:
+
+```
+sudo reboot
+```
+
 ### Install kubernetes
 
 #### Install the deployment tools
