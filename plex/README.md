@@ -1,5 +1,90 @@
 # Plex
 
+## Plex worker installation
+
+### Basic installation
+
+Follow the main [INSTALL.md](../INSTALL.md) to install a worker node.
+
+Then, instead of using `kubeadm init`, you use the `kubeadm join` command that was created during the install of the control plane. 
+
+(optional) To recreate a new `kubeadm join` command, use:
+
+```
+# On the control plane node
+kubeadm token create --print-join-command
+```
+
+### Enable hardware transcoding for an Intel ARC GPU
+
+#### Drivers
+If you are on Ubuntu 22.04 LTS, or on a modern Linux distribution with access to kernel >=6.2, the drivers for an Intel ARC GPU should already be working. More details [here](https://dgpu-docs.intel.com/driver/installation.html#ubuntu-install-steps). On Ubuntu 22.04.3 LTS, the kernel 6.5 is easily available with the [HWE kernel](https://askubuntu.com/questions/1442208/how-to-enable-hwe-on-ubuntu-22-04).
+
+You can check the state of the drivers and of the GPU using HWInfo:
+```
+sudo apt install hwinfo
+hwinfo --display
+```
+
+Note the i915 driver and its "active" status:
+```
+ Driver: "i915"
+  Driver Modules: "i915"
+  Memory Range: 0xfb000000-0xfbffffff (rw,non-prefetchable)
+  Memory Range: 0xb0000000-0xbfffffff (ro,non-prefetchable)
+  Memory Range: 0xfc000000-0xfc1fffff (ro,non-prefetchable,disabled)
+  IRQ: 94 (96 events)
+  Module Alias: "pci:v00008086d000056A6sv00001849sd00006007bc03sc00i00"
+  Driver Info #0:
+    Driver Status: i915 is active
+```
+
+#### Intel OpenCL ICD
+
+To test that OpenCL is working on the node, please install the intel runtime and run clinfo:
+
+```
+sudo apt install intel-opencl-icd
+clinfo -l
+```
+
+The output for my Intel ARC A310 (please note the ID [0x56a6](https://dgpu-docs.intel.com/devices/hardware-table.html)):
+```
+Platform #0: Intel(R) OpenCL HD Graphics
+ `-- Device #0: Intel(R) Graphics [0x56a6]
+```
+
+#### Enable GuC
+
+Use this command to activate GuC in the kernel config:
+
+```
+echo "options i915 enable_guc=2" | sudo tee /etc/modprobe.d/i915.conf
+```
+
+#### GRUB changes for i915
+
+First, identify which GPU ID is right for you using the Intel Hardware Table. In my case, it is 56a5 for an ARC A380.
+
+Then, we will add some default parameters to GRUB bootloader:
+```
+sudo nano /etc/default/grub
+```
+
+On Ubuntu 22.04.3 LTS, my GRUB_CMDLINE_LINUX_DEFAULT was empty. I modified it with:
+
+```
+GRUB_CMDLINE_LINUX_DEFAULT="i915.enable_hangcheck=0 i915.force_probe=56a5"
+```
+
+Please note the use of my GPU ID in `i915.force_probe=`.
+
+**Reboot:**
+
+```
+sudo reboot
+```
+
 ## Installation
 
 1. Add the Plex helm repo:

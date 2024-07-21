@@ -190,11 +190,18 @@ sudo apt-mark hold kubelet kubeadm kubectl
 sudo systemctl enable --now kubelet
 ```
 
+> **IMPORTANT**<br>
+> The installation ends here for worker nodes !!!<br>
+> Please use `kubeadm join` instead of `kubeadm init`
+
 #### Bootstrap the cluster
 You can change the pods CIDR and service CIDR to match your needs. More information [here](https://kubernetes.io/docs/reference/setup-tools/kubeadm/kubeadm-init).
 ```
 sudo kubeadm init --pod-network-cidr 10.244.0.0/16
 ```
+
+> **IMPORTANT**<br>
+> Please write down the `kubeadm join` command for later use by the worker nodes !!!
 
 If the command is successful, you get instructions at the end, to help you setup the admin config. Set it up on the user that will access the cluster (probably your current admin user):
 ```
@@ -344,89 +351,6 @@ On your client, where kubernetes and your pod will be running, you must edit the
 Example:
 ```
 SERVER_IP:SERVER_PATH CLIENT_PATH nfs auto,nofail,noatime,nolock,intr,tcp,rsize=1048576,wsize=1048576,actimeo=1800 0 0
-```
-
-## Plex worker installation
-
-### Basic installation
-
-The process to setup the worker node is the same as the control plane node, except that you skip the load balancer, network addon and ingress steps. You simply install kubernetes (kubelet, kubeadm, kubectl) and its dependencies (containerd, runc, CNI, ...).
-
-Then, instead of using `kubeadm init`, you use `kubeadm join`. You may not have written down the join command that `kubeadm` gave you on the control plane node. To create a new `kubeadm join` command, simply use:
-
-```
-# On the control plane node
-kubeadm token create --print-join-command
-```
-
-### Enable hardware transcoding for an Intel ARC GPU
-
-#### Drivers
-If you are on Ubuntu 22.04 LTS, or on a modern Linux distribution with access to kernel >=6.2, the drivers for an Intel ARC GPU should already be working. More details [here](https://dgpu-docs.intel.com/driver/installation.html#ubuntu-install-steps). On Ubuntu 22.04.3 LTS, the kernel 6.5 is easily available with the [HWE kernel](https://askubuntu.com/questions/1442208/how-to-enable-hwe-on-ubuntu-22-04).
-
-You can check the state of the drivers and of the GPU using HWInfo:
-```
-sudo apt install hwinfo
-hwinfo --display
-```
-
-Note the i915 driver and its "active" status:
-```
- Driver: "i915"
-  Driver Modules: "i915"
-  Memory Range: 0xfb000000-0xfbffffff (rw,non-prefetchable)
-  Memory Range: 0xb0000000-0xbfffffff (ro,non-prefetchable)
-  Memory Range: 0xfc000000-0xfc1fffff (ro,non-prefetchable,disabled)
-  IRQ: 94 (96 events)
-  Module Alias: "pci:v00008086d000056A6sv00001849sd00006007bc03sc00i00"
-  Driver Info #0:
-    Driver Status: i915 is active
-```
-
-#### Intel OpenCL ICD
-
-To test that OpenCL is working on the node, please install the intel runtime and run clinfo:
-
-```
-sudo apt install intel-opencl-icd
-clinfo -l
-```
-
-The output for my Intel ARC A310 (please note the ID [0x56a6](https://dgpu-docs.intel.com/devices/hardware-table.html)):
-```
-Platform #0: Intel(R) OpenCL HD Graphics
- `-- Device #0: Intel(R) Graphics [0x56a6]
-```
-
-#### Enable GuC
-
-Use this command to activate GuC in the kernel config:
-
-```
-echo "options i915 enable_guc=2" | sudo tee /etc/modprobe.d/i915.conf
-```
-
-#### GRUB changes for i915
-
-First, identify which GPU ID is right for you using the Intel Hardware Table. In my case, it is 56a5 for an ARC A380.
-
-Then, we will add some default parameters to GRUB bootloader:
-```
-sudo nano /etc/default/grub
-```
-
-On Ubuntu 22.04.3 LTS, my GRUB_CMDLINE_LINUX_DEFAULT was empty. I modified it with:
-
-```
-GRUB_CMDLINE_LINUX_DEFAULT="i915.enable_hangcheck=0 i915.force_probe=56a5"
-```
-
-Please note the use of my GPU ID in `i915.force_probe=`.
-
-**Reboot:**
-
-```
-sudo reboot
 ```
 
 #### Misc
