@@ -353,7 +353,7 @@ kubeadm token create --print-join-command
 #### Drivers
 If you are on Ubuntu 22.04 LTS, or on a modern Linux distribution with access to kernel >=6.2, the drivers for an Intel ARC GPU should already be working. More details [here](https://dgpu-docs.intel.com/driver/installation.html#ubuntu-install-steps). On Ubuntu 22.04.3 LTS, the kernel 6.5 is easily available with the [HWE kernel](https://askubuntu.com/questions/1442208/how-to-enable-hwe-on-ubuntu-22-04).
 
-You can check that using HWInfo:
+You can check the state of the drivers and of the GPU using HWInfo:
 ```
 sudo apt install hwinfo
 hwinfo --display
@@ -389,14 +389,15 @@ Platform #0: Intel(R) OpenCL HD Graphics
 
 #### Enable GuC
 
-Reboot after changing the grub parameters (see below).
+Use this command to activate GuC in the kernel config:
+
 ```
 echo "options i915 enable_guc=2" | sudo tee /etc/modprobe.d/i915.conf
 ```
 
 #### GRUB changes for i915
 
-First, identify which GPU ID is right for you using the Intel Hardware Table. In my case, it is 56a6 for an ARC A310.
+First, identify which GPU ID is right for you using the Intel Hardware Table. In my case, it is 56a5 for an ARC A380.
 
 Then, we will add some default parameters to GRUB bootloader:
 ```
@@ -406,10 +407,12 @@ sudo nano /etc/default/grub
 On Ubuntu 22.04.3 LTS, my GRUB_CMDLINE_LINUX_DEFAULT was empty. I modified it with:
 
 ```
-GRUB_CMDLINE_LINUX_DEFAULT="i915.enable_hangcheck=0 pci=realloc=off i915.force_probe=56a6"
+GRUB_CMDLINE_LINUX_DEFAULT="i915.enable_hangcheck=0 i915.force_probe=56a5"
 ```
 
 Please note the use of my GPU ID in `i915.force_probe=`.
+
+**Reboot:**
 
 ```
 sudo reboot
@@ -439,7 +442,8 @@ You can verify that the plugin has been installed on the expected nodes by searc
 kubectl get nodes -o=jsonpath="{range .items[*]}{.metadata.name}{'\n'}{' i915: '}{.status.allocatable.gpu\.intel\.com/i915}{'\n'}"
 ```
 
-**(IMPORTANT) Check the label of this ARC gpu for pod affinity**
+**(IMPORTANT) Check the label of this ARC gpu for pod affinity:**
+
 ```
 kubectl describe node plex
 ```
@@ -457,194 +461,7 @@ Labels:             beta.kubernetes.io/arch=amd64
                     kubernetes.io/os=linux
 ```
 
-We want to know the ID of our GPU, in this example `0300-56a5`.
-
-#### Detailed Explanation
-<details>
-  <summary>See details</summary>
-
-- auto: Allows the filesystem to be mounted automatically at boot or with the mount -a command.
-  
-  Reason: Ensures that the NFS share is available without manual intervention.
-- nofail: Ensures the system will boot even if the NFS mount fails.
-  
-  Reason: Prevents boot issues if the NFS server is temporarily unavailable.
-- noatime: Disables updating the file access time every time a file is read.
-  
-  Reason: Reduces disk I/O, which is beneficial for media files that are read frequently.
-- nolock: Disables file locking.
-  
-  Reason: Useful if file locks are not required (e.g., for read-only media files), which simplifies NFS operations.
-- intr: Allows NFS operations to be interrupted.
-  
-  Reason: Improves responsiveness if there are network issues, ensuring the system can handle disruptions better.
-- tcp: Uses TCP instead of UDP for data transmission.
-  
-  Reason: Provides more reliable data transmission, which is important for consistent media streaming.
-- rsize=1048576 and wsize=1048576: Sets the read and write buffer sizes to 1MB.
-  
-  Reason: Larger buffer sizes can improve performance by reducing the number of read/write operations, which is particularly useful for large media files.
-- actimeo=1800: Sets the attribute cache timeout to 1800 seconds (30 minutes).
-  
-  Reason: Reduces the frequency of metadata lookups, improving performance by caching file attributes for longer periods.
-</details>
-
-### Plex
-
-1. Add the Plex helm repo:
-```
-helm repo add plex https://raw.githubusercontent.com/plexinc/pms-docker/gh-pages
-```
-
-2. Inspect and modify the default values:
-
-```
-helm show values plex/plex-media-server > values.yaml
-```
-
-Example:
-
-<details
-<summary>values.yaml</summary>
-
-```
-# The docker image information for the pms application
-ingress:
-  # Specify if an ingress resource for the pms server should be created or not
-  enabled: false
-
-  # The ingress class that should be used
-  ingressClassName: "ingress-nginx"
-
-  # The url to use for the ingress reverse proxy to point at this pms instance
-  url: "https://plex.domain.com"
-
-pms:
-  # the volume size to provision for the PMS database
-  configStorage: 200Gi
-
-  #resources: {}
-  resources:
-    limits:
-      gpu.intel.com/i915: "1"
-    requests:
-      cpu: "1"
-      gpu.intel.com/i915: "1"
-      memory: 4Gi
-  # We usually recommend not to specify default resources and to leave this as a conscious
-  # choice for the user. This also increases chances charts run on environments with little
-  # resources, such as Minikube. If you do want to specify resources, uncomment the following
-  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
-  # limits:
-  #   cpu: 100m
-  #   memory: 128Mi
-  # requests:
-  #   cpu: 100m
-  #   memory: 128Mi
-
-service:
-  type: NodePort
-  port: 32400
-
-  # Port to use when type of service is "NodePort" (32400 by default)
-  nodePort: 32400
-
-  # optional extra annotations to add to the service resource
-  annotations: {}
-
-#affinity: {}
-affinity:
-  nodeAffinity:
-    requiredDuringSchedulingIgnoredDuringExecution:
-      nodeSelectorTerms:
-      - matchExpressions:
-        - key: "gpu.intel.com/device-id.0300-56a5.count"
-          operator: In
-          values:
-          - "1"
-
-extraEnv: {}
-# extraEnv:
-  # This claim is optional, and is only used for the first startup of PMS
-  # The claim is obtained from https://www.plex.tv/claim/ is is only valid for a few minutes
-#   PLEX_CLAIM: "claim"
-#   HOSTNAME: "PlexServer"
-#   TZ: "Etc/UTC"
-#   PLEX_UPDATE_CHANNEL: "5"
-#   PLEX_UID: "uid of plex user"
-#   PLEX_GID: "group id of plex user"
-  # a list of CIDRs that can use the server without authentication
-  # this is only used for the first startup of PMS
-#   ALLOWED_NETWORKS: "0.0.0.0/0"
-
-
-# Optionally specify additional volume mounts for the PMS and init containers.
-#extraVolumeMounts: []
-extraVolumeMounts:
-  - name: movies
-    mountPath: /movies
-  - name: tv
-    mountPath: /tv
-  - name: anime
-    mountPath: /anime
-
-
-# Optionally specify additional volumes for the pod.
-#extraVolumes: []
-extraVolumes:
-  - name: movies
-    nfs:
-      path: /mnt/user/movies
-      server: 10.0.0.2
-  - name: tv
-    nfs:
-      path: /mnt/user/tv
-      server: 10.0.0.2
-  - name: anime
-    nfs:
-      path: /mnt/user/anime
-      server: 10.0.0.2
-```
-
-- Pay attention to the pod affinity label, it may not be the same for your ARC GPU.
-- Pay attention to the domain name
-
-</details>
-
-3. Create the pms-config PersistentVolume
-
-pms-pv.yaml
-```
-apiVersion: v1
-kind: PersistentVolume
-metadata:
-  name: pms-config
-spec:
-  accessModes:
-  - ReadWriteOnce
-  capacity:
-    storage: 200Gi
-  persistentVolumeReclaimPolicy: Retain
-  hostPath:
-    path: "/mnt/pms-config"
- ```
- 
- ```
- kubectl apply -f pms-pv.yaml
- ```
- 
- 4. Install Plex
-
-```
-helm install plex-media-server plex/plex-media-server -f values.yaml
-```
-
-### Plex configuration
-
-#### Custom URL
-To be able to distinguish from local to distant access to the server, we must configure Plex to use a custom URL: Settings -> Network -> Custom URL. This is also why I don't use a simple NodePort for the plex service. Otherwise, all the traffic looks like it is coming from 10.201.0.1 (the gateway of my pod CIDR, see above).
-
-I'm not totally sure you need both the custom URL AND the external access using port forwarding, but it started to work in my setup after both were setup.
+We want to know the ID of our GPU, in this example `0300-56a5`. This will be useful for the [custom values](./plex/custom-values.yaml) during the [Plex installation](./plex/README.md).
 
 ## Home networking
 

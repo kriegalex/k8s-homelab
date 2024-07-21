@@ -1,0 +1,128 @@
+# The docker image information for the pms application
+image:
+  registry: index.docker.io
+  repository: plexinc/pms-docker
+  # If unset use "latest"
+  tag: "latest"
+  sha: ""
+  pullPolicy: IfNotPresent
+
+ingress:
+  # Specify if an ingress resource for the pms server should be created or not
+  enabled: true
+
+  # The ingress class that should be used
+  ingressClassName: "nginx"
+
+  # The url to use for the ingress reverse proxy to point at this pms instance
+  url: "plex.domain.com"
+
+  # Custom annotations to put on the ingress resource
+  annotations: {}
+
+pms:
+  # The storage class to use when provisioning the pms config volume
+  # this needs to be created manually, null will use the default
+  storageClassName: standard
+
+  # the volume size to provision for the PMS database
+  configStorage: 200Gi
+
+  # Name of an existing `PersistentVolumeClaim` for the PMS database
+  # NOTE: When set, 'configStorage' and 'storageClassName' are ignored.
+  configExistingClaim: ""
+
+  #resources: {}
+  resources:
+    limits:
+      gpu.intel.com/i915: "1"
+    requests:
+      cpu: "1"
+      gpu.intel.com/i915: "1"
+      memory: 4Gi
+
+# A basic image that will convert the configmap to a file in the rclone config volume
+# this is ignored if rclone is not enabled
+initContainer:
+  image:
+    registry: index.docker.io
+    repository: alpine
+    # If unset use latest
+    tag: 3.18.0
+    sha: ""
+    pullPolicy: IfNotPresent
+
+  # A custom script that will be run in an init container to do any setup before the PMS service starts up
+  # This will be run everytime the pod starts, make sure that some mechanism is included to prevent
+  # this from running more than once if it should only be run on the first startup.
+  script: ""
+  ###
+  ### Example init script that will import a pre-existing pms database if one has not already been setup
+  ### This pms database must be available through a URL (or some other mechanism to be pulled into the container)
+  # script: |-
+  #   #!/bin/sh
+  #   echo "fetching pre-existing pms database to import..."
+
+  #   if [ -d "/config/Library" ]; then
+  #     echo "PMS library already exists, exiting."
+  #     exit 0
+  #   fi
+
+  #   # wait for the database archive to be manually copied to the server
+  #   while [ ! -f /pms.tgz ]; do sleep 2; done;
+
+  #   tar -xvzf /pms.tgz -C /config
+  #   rm pms.tgz
+
+  #   echo "Done."
+
+service:
+  type: ClusterIP
+  port: 32400
+
+#affinity: {}
+affinity:
+  nodeAffinity:
+    requiredDuringSchedulingIgnoredDuringExecution:
+      nodeSelectorTerms:
+      - matchExpressions:
+        - key: "gpu.intel.com/device-id.0300-56a5.count"
+          operator: In
+          values:
+          - "1"
+
+extraEnv: {}
+# extraEnv:
+  # This claim is optional, and is only used for the first startup of PMS
+  # The claim is obtained from https://www.plex.tv/claim/ is is only valid for a few minutes
+#   PLEX_CLAIM: "claim"
+#   HOSTNAME: "PlexServer"
+#   TZ: "Etc/UTC"
+#   PLEX_UPDATE_CHANNEL: "5"
+#   PLEX_UID: "uid of plex user"
+#   PLEX_GID: "group id of plex user"
+  # a list of CIDRs that can use the server without authentication
+  # this is only used for the first startup of PMS
+#   ALLOWED_NETWORKS: "0.0.0.0/0"
+
+
+# Optionally specify additional volume mounts for the PMS and init containers.
+#extraVolumeMounts: []
+extraVolumeMounts:
+  - name: movies
+    mountPath: /movies # path in the container
+  - name: tv
+    mountPath: /tv # path in the container
+
+
+# Optionally specify additional volumes for the pod.
+#extraVolumes: []
+extraVolumes:
+  - name: movies
+    nfs:
+      path: /mnt/user/movies # path on the remote server
+      server: 10.0.0.2
+  - name: tv
+    nfs:
+      path: /mnt/user/tv # path on the remote server
+      server: 10.0.0.2
