@@ -185,6 +185,7 @@ spec:
   capacity:
     storage: 200Gi
   persistentVolumeReclaimPolicy: Retain
+  storageClassName: fast-nvme # by default is "standard"
   hostPath:
     path: "/mnt/pms-config"
  ```
