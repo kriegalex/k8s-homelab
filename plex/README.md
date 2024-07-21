@@ -59,6 +59,23 @@ sudo apt-get update
 sudo apt-get install -y containerd.io
 ```
 
+```
+containerd config default | sudo tee /etc/containerd/config.toml
+sudo nano /etc/containerd/config.toml
+```
+
+You must look for the `runc.options` portion: 
+```
+[plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc]
+  ...
+  [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc.options]
+    SystemdCgroup = true
+```
+
+```
+sudo systemctl restart containerd
+```
+
 ### Kubernetes runtimes
 
 These instructions are for Kubernetes v1.30.
