@@ -62,8 +62,8 @@ Note the i915 driver and its "active" status:
 To test that OpenCL is working on the node, please install the intel runtime and run clinfo:
 
 ```
-sudo apt install intel-opencl-icd
-clinfo -l
+sudo apt install intel-opencl-icd clinfo
+sudo clinfo -l
 ```
 
 The output for my Intel ARC A310 (please note the ID [0x56a6](https://dgpu-docs.intel.com/devices/hardware-table.html)):
