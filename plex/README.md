@@ -2,128 +2,15 @@
 
 ## Plex worker installation
 
-### Disable SWAP
+### Basic installation
 
-```
-sudo swapoff -a
-```
-
-To make it permanent, edit the `/etc/fstab` if needed (comment line with swap img)
-
-```
-sudo nano /etc/fstab
-```
-
-### Setup kernel parameters
-
-Since we are using Ubuntu 22, we need to load br_netfilter and make sure it persists across reboots.
-
-```
-sudo tee /etc/modules-load.d/containerd.conf <<EOF
-br_netfilter
-EOF
-sudo modprobe br_netfilter
-```
-
-```
-# sysctl params required by setup, params persist across reboots
-cat <<EOF | sudo tee /etc/sysctl.d/k8s.conf
-net.bridge.bridge-nf-call-ip6tables = 1
-net.bridge.bridge-nf-call-iptables = 1
-net.ipv4.ip_forward = 1
-EOF
-
-# Apply sysctl params without reboot
-sudo sysctl --system
-```
-
-### Install the container runtime
-
-```
-# Add Docker's official GPG key:
-sudo apt-get update
-sudo apt-get install ca-certificates curl
-sudo install -m 0755 -d /etc/apt/keyrings
-sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
-sudo chmod a+r /etc/apt/keyrings/docker.asc
-
-# Add the repository to Apt sources:
-echo \
-  "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu \
-  $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | \
-  sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
-sudo apt-get update
-```
-
-```
-sudo apt-get install -y containerd.io
-```
-
-```
-containerd config default | sudo tee /etc/containerd/config.toml
-sudo nano /etc/containerd/config.toml
-```
-
-You must look for the `runc.options` portion: 
-```
-[plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc]
-  ...
-  [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc.options]
-    SystemdCgroup = true
-```
-
-```
-sudo systemctl restart containerd
-```
-
-### Kubernetes runtimes
-
-These instructions are for Kubernetes v1.30.
-
-1. Update the apt package index and install packages needed to use the Kubernetes apt repository:
-```
-sudo apt-get update
-# apt-transport-https may be a dummy package; if so, you can skip that package
-sudo apt-get install -y apt-transport-https ca-certificates curl gpg nfs-common
-```
-
-2. Download the public signing key for the Kubernetes package repositories. The same signing key is used for all repositories so you can disregard the version in the URL:
-```
-# If the directory `/etc/apt/keyrings` does not exist, it should be created before the curl command, read the note below.
-# sudo mkdir -p -m 755 /etc/apt/keyrings
-curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.30/deb/Release.key | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
-```
-> Note: In releases older than Debian 12 and Ubuntu 22.04, directory /etc/apt/keyrings does not exist by default, and it should be created before the curl command.
-
-3. Add the appropriate Kubernetes apt repository. Please note that this repository have packages only for Kubernetes 1.30; for other Kubernetes minor versions, you need to change the Kubernetes minor version in the URL to match your desired minor version (you should also check that you are reading the documentation for the version of Kubernetes that you plan to install).
-```
-# This overwrites any existing configuration in /etc/apt/sources.list.d/kubernetes.list
-echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.30/deb/ /' | sudo tee /etc/apt/sources.list.d/kubernetes.list
-```
-
-4. Update the apt package index, install kubelet, kubeadm and kubectl, and pin their version:
-```
-sudo apt-get update
-sudo apt-get install -y kubelet kubeadm kubectl kubernetes-cni
-sudo apt-mark hold kubelet kubeadm kubectl kubernetes-cni
-```
-
-5. (Optional) Enable the kubelet service before running kubeadm:
-```
-sudo systemctl enable --now kubelet
-```
+Follow the main [INSTALL.md](../INSTALL.md) to install a worker node.
 
 Then, instead of using `kubeadm init`, you use the `kubeadm join` command that was created during the install of the control plane. 
 
-### Label the worker node
+### (optional) Recreate a token
 
-```
-kubectl label node WORKER-NODE-NAME node-role.kubernetes.io/worker=worker
-```
-
-### Recreate a token
-
-(optional) If you forgot the join command, or if the token expired, you can recreate a token. An expired token will result in the `kubeadm join` command to appear as stuck. You can check what is going on by adding `--v=2` at the end of the command:
+If you forgot the join command, or if the token expired, you can recreate a token. An expired token will result in the `kubeadm join` command to appear as stuck. You can check what is going on by adding `--v=2` at the end of the command:
 
 ```
 sudo kubeadm join 10.0.0.10:6443 --token TOKEN --discovery-token-ca-cert-hash SHA --v=2
@@ -138,6 +25,12 @@ To recreate a new `kubeadm join` command, use:
 ```
 # On the control plane node
 kubeadm token create --print-join-command
+```
+
+### Label the worker node
+
+```
+kubectl label node WORKER-NODE-NAME node-role.kubernetes.io/worker=worker
 ```
 
 ### Enable hardware transcoding for an Intel ARC GPU
@@ -179,15 +72,76 @@ Platform #0: Intel(R) OpenCL HD Graphics
  `-- Device #0: Intel(R) Graphics [0x56a6]
 ```
 
-#### Install the plugin on the cluster
+#### Kernel parameters
 
-[Instructions here](https://intel.github.io/intel-device-plugins-for-kubernetes/cmd/gpu_plugin/README.html#installation).
+If you use the HWE kernel from Ubuntu 22.04.4 LTS, you have a 6.5.0+ kernel. This version should normally support an Intel ARC A310/A380 GPU out of the box. You should NOT need to modify anything more.
+
+##### (optional) Enable GuC
+
+Use this command to activate GuC in the kernel config:
+
+```
+echo "options i915 enable_guc=2" | sudo tee /etc/modprobe.d/i915.conf
+sudo update-initramfs -u
+```
+
+##### (optional) GRUB changes for i915
+
+First, identify which GPU ID is right for you using the Intel Hardware Table. In my case, it is 56a5 for an ARC A380.
+
+Then, we will add some default parameters to GRUB bootloader:
+```
+sudo nano /etc/default/grub
+```
+
+On Ubuntu 22.04.3 LTS, my GRUB_CMDLINE_LINUX_DEFAULT was empty. I modified it with:
+
+```
+GRUB_CMDLINE_LINUX_DEFAULT="i915.enable_hangcheck=0 pci=realloc=off i915.force_probe=56a5"
+```
+
+Please note the use of my GPU ID in `i915.force_probe=`.
+
+**Reboot:**
+
+```
+sudo update-grub
+sudo reboot
+```
+
+#### Install Intel HELM repositories
+
+Intel GPU helm charts also depends on cert-manager, this guide assumes you installed it already by following the [ingress README](../ingress/README.md). Original instructions by Intel [here](https://github.com/intel/intel-device-plugins-for-kubernetes/blob/main/INSTALL.md).
+
+```
+helm repo add nfd https://kubernetes-sigs.github.io/node-feature-discovery/charts # for NFD
+helm repo add intel https://intel.github.io/helm-charts/ # for device-plugin-operator and plugins
+helm repo update
+```
+
+#### NFD
 
 Deploy GPU plugin with the help of NFD (Node Feature Discovery). It detects the presence of Intel GPUs and labels them accordingly. GPU plugin’s node selector is used to deploy plugin to nodes which have such a GPU label.
+
 ```
-kubectl apply -k 'https://github.com/intel/intel-device-plugins-for-kubernetes/deployments/nfd?ref=v0.30.0'
-kubectl apply -k 'https://github.com/intel/intel-device-plugins-for-kubernetes/deployments/nfd/overlays/node-feature-rules?ref=v0.30.0'
-kubectl apply -k 'https://github.com/intel/intel-device-plugins-for-kubernetes/deployments/gpu_plugin/overlays/nfd_labeled_nodes?ref=v0.30.0'
+helm repo add nfd https://kubernetes-sigs.github.io/node-feature-discovery/charts 
+helm install nfd nfd/node-feature-discovery \
+  --namespace node-feature-discovery --create-namespace
+```
+
+#### Operator
+
+```
+helm repo add intel https://intel.github.io/helm-charts/
+helm install dp-operator intel/intel-device-plugins-operator --namespace inteldeviceplugins-system --create-namespace
+```
+
+#### GPU Plugin
+
+```
+helm install intel-device-plugins-gpu intel/intel-device-plugins-gpu \
+  --namespace inteldeviceplugins-system --create-namespace \
+  --set nodeFeatureRule=true
 ```
 
 You can verify that the plugin has been installed on the expected nodes by searching for the relevant resource allocation status on the nodes:
