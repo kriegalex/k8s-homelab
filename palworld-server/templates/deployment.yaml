@@ -1,0 +1,53 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: {{ .Release.Name }}-server
+  name: {{ .Release.Name }}-server
+spec:
+  replicas: {{ .Values.replicaCount }}
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: {{ .Release.Name }}-server
+  template:
+    metadata:
+      labels:
+        app: {{ .Release.Name }}-server
+      annotations:
+        restart-timestamp: {{ now | quote }}
+    spec:
+      containers:
+        - name: {{ .Release.Name }}-server
+          image: "{{ .Values.image.repository }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            {{- range .Values.service.ports }}
+            - containerPort: {{ .port }}
+              protocol: {{ .protocol }}
+              name: {{ .name }}
+            {{- end }}
+          env:
+            - name: ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Release.Name }}-secrets
+                  key: rconPassword
+          envFrom:
+            - configMapRef:
+                name: {{ .Release.Name }}-cm
+          volumeMounts:
+            - mountPath: /palworld
+              name: datadir
+          resources:
+            requests:
+              memory: {{ .Values.resources.requests.memory }}
+              cpu: {{ .Values.resources.requests.cpu }}
+            limits:
+              memory: {{ .Values.resources.limits.memory }}
+              cpu: {{ .Values.resources.limits.cpu }}
+      volumes:
+        - name: datadir
+          persistentVolumeClaim:
+            claimName: {{ .Release.Name }}-server-datadir

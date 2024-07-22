@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: pms-config
+spec:
+  accessModes:
+  - ReadWriteOnce
+  capacity:
+    storage: 200Gi
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: fast-nvme
+  hostPath:
+    path: "/mnt/pms-config"
