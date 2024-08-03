@@ -10,6 +10,12 @@ image:
   pullPolicy: IfNotPresent
   rootless: true
 
+service:
+  ssh:
+    type: LoadBalancer
+    port: 8022
+    externalTrafficPolicy: Local
+
 ingress:
   enabled: true
   className: nginx
