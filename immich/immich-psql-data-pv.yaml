@@ -10,3 +10,4 @@ spec:
   persistentVolumeReclaimPolicy: Retain
   hostPath:
     path: "/mnt/immich/psql-data"
+  storageClassName: "immich-psql"

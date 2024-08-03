@@ -1,10 +1,17 @@
+env:
+  REDIS_HOSTNAME: 'redis-master'
+  REDIS_PASSWORD: "changeme"
+
 image:
   tag: v1.109.2 # v1.106.1 by default
 
 immich:
   persistence:
     library:
-      existingClaim: immich-library-pvc
+      existingClaim: nfs-immich
+    external:
+      existingClaim: nfs-nextcloud
+      readOnly: true
 
 server:
   # Uncomment this if you don't have an ingress in your Kubernetes cluster 
@@ -14,15 +21,36 @@ server:
   #     type: LoadBalancer
   ingress:
     main:
-      enabled: false # prefer using an external Ingress definition
+      enabled: true
+      ingressClassName: nginx # mandatory for ingress-nginx 
+      annotations:
+        cert-manager.io/cluster-issuer: "letsencrypt-prod"
+        nginx.ingress.kubernetes.io/backend-protocol: "HTTP"
+        nginx.ingress.kubernetes.io/proxy-body-size: 4G # allow uploads up to 4GB
+      hosts:
+        - host: immich.domain.com
+          paths:
+            - path: /
+              pathType: Prefix
+      tls:
+      - secretName: immich-tls
+        hosts:
+          - immich.domain.com
 
 machine-learning:
   persistence:
     cache:
+      type: pvc
       existingClaim: immich-machine-learning-cache
 
 postgresql:
   enabled: true
+  primary:
+    persistence:
+      storageClass: "immich-psql"
 
 redis:
-  enabled: true
+  enabled: false
+  # master:
+  #   persistence:
+  #     storageClass: "immich-redis"
