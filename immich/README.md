@@ -10,7 +10,7 @@ kubectl create -f immich-redis-pv.yaml -f immich-redis-pvc.yaml
 kubectl create -f immich-ml-cache-pv.yaml -f immich-ml-cache-pvc.yaml
 ```
 
-### Setup permissions
+### Setup permissions (worker nodes)
 
 ```
 sudo mkdir -p /mnt/immich/psql
