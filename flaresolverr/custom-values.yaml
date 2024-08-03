@@ -1,0 +1,7 @@
+image:
+  # -- image repository
+  repository: ghcr.io/flaresolverr/flaresolverr
+  # -- image pull policy
+  pullPolicy: IfNotPresent
+  # -- image tag
+  tag: "latest"
