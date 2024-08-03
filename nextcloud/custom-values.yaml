@@ -68,7 +68,13 @@ nextcloud:
     # smtpUsernameKey: smtp-username
     # smtpPasswordKey: smtp-password
     # smtpHostKey: smtp-host
-  
+  ## Extra environment variables
+  # extraEnv:
+    ## use for external redis
+    # - name: REDIS_HOST
+    #   value: "redis-master"
+    # - name: REDIS_HOST_PASSWORD
+    #   value: "changeme"
 
 nginx:
   ## You need to set an fpm version of the image for nextcloud if you want to use nginx!
