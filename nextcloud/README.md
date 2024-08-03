@@ -16,10 +16,8 @@ kubectl create secret generic nextcloud-credentials \
 
 ```console
 kubectl create secret generic nextcloud-psql-credentials \
-  --from-literal=db-name='nextcloud' \
   --from-literal=db-username='nextcloud' \
   --from-literal=db-password='your_password' \
-  --from-literal=db-hostname-or-ip='postgresql' \
   --from-literal=admin-password='your_admin_pwd' \
   --namespace=default
 ```
@@ -28,19 +26,25 @@ kubectl create secret generic nextcloud-psql-credentials \
 
 On the control plane:
 ```console
-kubectl apply -f nextcloud-config-pv.yaml
+kubectl apply -f nextcloud-config-pv.yaml -f nextcloud-config-pvc.yaml
+kubectl apply -f nextcloud-psql-pv.yaml -f nextcloud-psql-pvc.yaml
+kubectl apply -f nextcloud-redis-pv.yaml -f nextcloud-redis-pvc.yaml
 ```
 
-Create the needed folders on the all potential target nodes:
+### Setup permissions (worker nodes)
 
-Adapt the path if you modify it in `nextcloud-config-pv.yaml`:
-```console
-sudo mkdir /mnt/nextcloud/config
+```
+sudo mkdir -p /mnt/nextcloud/psql
+sudo chown 1001:1001 /mnt/nextcloud/psql
+sudo mkdir -p /mnt/nextcloud/redis
+sudo chown 1001:1001 /mnt/nextcloud/redis
+sudo mkdir -p /mnt/nextcloud/config
+sudo chown www-data:www-data /mnt/nextcloud/config
 ```
 
 ### NFS
 
-If you are creating a PV that uses NFS, make sure that the share has the option `no_root_squash`, as Nextcloud will try to chown the data. With the current config, this command will fail without `no_root_squash`, as the command is probably run as root to set all data to be owned by `www-data` (UID 33). However, even if nextcloud can't `chown` the data, it will eventually work. The only difference is that the data will not be owned by `www-data`, but by what is set by the NFS share. To be sure it doesn't create issues later, I've changed my NFS export configuration.
+If you are creating a PV that uses NFS, it can be helpful to setup the share with the option `no_root_squash`, as Nextcloud will try to chown the data during initialization. If not done, it doesn't seem to break the installation.
 
 ## Install Nextcloud
 
