@@ -15,10 +15,12 @@ ingress:
   ingressClassName: "nginx"
 
   # The url to use for the ingress reverse proxy to point at this pms instance
-  url: "plex.domain.com"
+  url: "https://plex.domain.com"
 
   # Custom annotations to put on the ingress resource
-  annotations: {}
+  annotations:
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    nginx.ingress.kubernetes.io/backend-protocol: "HTTP" # Change to HTTPS if required
 
 pms:
   # The storage class to use when provisioning the pms config volume
@@ -119,10 +121,8 @@ extraVolumeMounts:
 #extraVolumes: []
 extraVolumes:
   - name: movies
-    nfs:
-      path: /mnt/user/movies # path on the remote server
-      server: 10.0.0.2
+    persistentVolumeClaim:
+      claimName: nfs-movies
   - name: tv
-    nfs:
-      path: /mnt/user/tv # path on the remote server
-      server: 10.0.0.2
+    persistentVolumeClaim:
+      claimName: nfs-tv
