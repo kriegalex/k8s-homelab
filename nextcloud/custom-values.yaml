@@ -15,7 +15,6 @@ ingress:
   className: nginx
   annotations: 
    nginx.ingress.kubernetes.io/proxy-body-size: 4G
-  #  kubernetes.io/tls-acme: "true"
    cert-manager.io/cluster-issuer: letsencrypt-prod
   #  # Keep this in sync with the README.md:
    nginx.ingress.kubernetes.io/server-snippet: |-
@@ -57,18 +56,12 @@ phpClientHttpsFix:
 nextcloud:
   host: cloud.domain.com
   username: admin
-  # password: changeme
   ## Use an existing secret
   existingSecret:
     enabled: true
     secretName: nextcloud-credentials
     usernameKey: nextcloud-username
     passwordKey: nextcloud-password
-    # tokenKey: nextcloud-token
-    # smtpUsernameKey: smtp-username
-    # smtpPasswordKey: smtp-password
-    # smtpHostKey: smtp-host
-  
 
 nginx:
   ## You need to set an fpm version of the image for nextcloud if you want to use nginx!
@@ -88,7 +81,7 @@ externalDatabase:
   type: postgresql
 
   ## Database host
-  host: postgresql
+  host: nextcloud-postgresql
 
   ## Use a existing secret
   existingSecret:
@@ -96,15 +89,13 @@ externalDatabase:
     secretName: nextcloud-psql-credentials
     usernameKey: db-username
     passwordKey: db-password
-    hostKey: db-hostname-or-ip
-    databaseKey: db-name
 
 ##
 ## PostgreSQL chart configuration
 ## for more options see https://github.com/bitnami/charts/tree/main/bitnami/postgresql
 ##
 postgresql:
-  enabled: false
+  enabled: true
   global:
     postgresql:
       # global.postgresql.auth overrides postgresql.auth
@@ -119,8 +110,22 @@ postgresql:
   primary:
     persistence:
       enabled: true
-      storageClass: "fast-nvme-nextcloud-psql"
+      existingClaim: nextcloud-psql
 
+##
+## Redis chart configuration
+## for more options see https://github.com/bitnami/charts/tree/main/bitnami/redis
+##
+redis:
+  enabled: true
+  auth:
+    enabled: true
+    password: 'changeme'
+  architecture: standalone # standalone if only 1 master pod
+  master:
+    persistence:
+      enabled: true
+      existingClaim: nextcloud-redis
 
 ## Cronjob to execute Nextcloud background tasks
 ## ref: https://docs.nextcloud.com/server/latest/admin_manual/configuration_server/background_jobs_configuration.html#cron
@@ -134,9 +139,7 @@ cronjob:
 persistence:
   # Nextcloud Data (/var/www/html)
   enabled: true
-  storageClass: "fast-nvme-nextcloud-config"
-  accessMode: ReadWriteOnce
-  size: 8Gi
+  existingClaim: "nextcloud-config"
 
   ## Use an additional pvc for the data directory rather than a subpath of the default PVC
   ## Useful to store data on a different storageClass (e.g. on slower disks)
