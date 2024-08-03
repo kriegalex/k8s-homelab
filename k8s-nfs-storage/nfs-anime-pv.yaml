@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: nfs-anime
+spec:
+  storageClassName: ""
+  capacity:
+    storage: 1Mi
+  accessModes:
+    - ReadWriteMany
+  nfs:
+    server: 10.0.0.2
+    path: "/mnt/user/anime"
+  mountOptions:
+    - nfsvers=4.2

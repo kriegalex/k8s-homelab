@@ -1,13 +1,15 @@
 apiVersion: v1
 kind: PersistentVolume
 metadata:
-  name: immich-psql-data
+  name: qbittorrent-config-pv
+  labels: 
+    app: qbittorrent
 spec:
   capacity:
-    storage: 10Gi
+    storage: 1Gi
   accessModes:
     - ReadWriteOnce
   persistentVolumeReclaimPolicy: Retain
   hostPath:
-    path: "/mnt/immich/psql-data"
-  storageClassName: "immich-psql"
+    path: "/mnt/qbittorrent/config"
+  storageClassName: ""
