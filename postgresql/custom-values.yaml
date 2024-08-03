@@ -1,0 +1,52 @@
+# Copyright Broadcom, Inc. All Rights Reserved.
+# SPDX-License-Identifier: APACHE-2.0
+
+image:
+  registry: docker.io
+  repository: bitnami/postgresql
+  tag: 16.3.0-debian-12-r23
+  
+auth:
+  enablePostgresUser: true
+  postgresPassword: "changeme"
+  
+architecture: standalone
+postgresqlDataDir: /bitnami/postgresql/data
+primary:
+  initdb:
+    scripts: 
+      init-nextcloud.sql: |
+        CREATE DATABASE "nextcloud";CREATE USER "nextcloud" WITH ENCRYPTED PASSWORD 'nextcloud';GRANT ALL PRIVILEGES ON DATABASE "nextcloud" TO nextcloud;
+      init-gitea.sql: |
+        CREATE DATABASE "gitea";CREATE USER "gitea" WITH ENCRYPTED PASSWORD 'gitea';GRANT ALL PRIVILEGES ON DATABASE "gitea" TO gitea;
+    ## @param primary.initdb.scriptsSecret Secret with scripts to be run at first boot (in case it contains sensitive information)
+    ## NOTE: This can work along `primary.initdb.scripts` or `primary.initdb.scriptsConfigMap`
+    ##
+    # scriptsSecret: "postgres-initdb-scripts"
+    ## @param primary.initdb.user Specify the PostgreSQL username to execute the initdb scripts
+    ##
+    user: "postgres"
+    ## @param primary.initdb.password Specify the PostgreSQL password to execute the initdb scripts
+    ##
+    password: "changeme"
+  persistence:
+    enabled: true
+    accessModes:
+      - ReadWriteOnce
+    size: 8Gi
+  resources:
+    requests:
+      cpu: 500m
+      memory: 512Mi
+    limits:
+      cpu: 750m
+      memory: 768Mi
+
+readReplicas:
+  resources:
+    requests:
+      cpu: 500m
+      memory: 512Mi
+    limits:
+      cpu: 750m
+      memory: 768Mi

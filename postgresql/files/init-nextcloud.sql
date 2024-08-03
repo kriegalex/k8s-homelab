@@ -1,0 +1,1 @@
+CREATE DATABASE "nextcloud";CREATE USER "nextcloud" WITH ENCRYPTED PASSWORD 'nextcloud';GRANT ALL PRIVILEGES ON DATABASE "nextcloud" TO nextcloud;
