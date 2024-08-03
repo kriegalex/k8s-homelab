@@ -1,6 +1,3 @@
-env:
-  REDIS_HOSTNAME: 'redis-master'
-  REDIS_PASSWORD: "changeme"
 
 image:
   tag: v1.109.2 # v1.106.1 by default
@@ -41,16 +38,16 @@ machine-learning:
   persistence:
     cache:
       type: pvc
-      existingClaim: immich-machine-learning-cache
+      existingClaim: immich-ml-cache
 
 postgresql:
   enabled: true
   primary:
     persistence:
-      storageClass: "immich-psql"
+      existingClaim: immich-psql
 
 redis:
-  enabled: false
-  # master:
-  #   persistence:
-  #     storageClass: "immich-redis"
+  enabled: true
+  master:
+    persistence:
+      existingClaim: immich-redis

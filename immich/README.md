@@ -1,37 +1,25 @@
 # Immich
 
-## PSQL persistence
+## Persistence
+
+We manage everything manually to avoid PVCs binding to the wrong PV. Also, a homelab K8S is not really a cloud native kubernetes cluster that dynamically asks storage from a cloud service using `storageClass`.
 
 ```
-kubectl create -f immich-psql-data-pv.yaml
+kubectl create -f immich-psql-pv.yaml -f immich-psql-pvc.yaml
+kubectl create -f immich-redis-pv.yaml -f immich-redis-pvc.yaml
+kubectl create -f immich-ml-cache-pv.yaml -f immich-ml-cache-pvc.yaml
 ```
 
 ### Setup permissions
 
 ```
-sudo mkdir -p /mnt/immich/psql-data
-sudo chown 1001:root /mnt/immich/psql-data
+sudo mkdir -p /mnt/immich/psql
+sudo chown 1001:1001 /mnt/immich/psql
+sudo mkdir -p /mnt/immich/redis
+sudo chown 1001:1001 /mnt/immich/redis
+sudo mkdir -p /mnt/immich/ml-cache
+sudo chown 1001:1001 /mnt/immich/ml-cache
 ```
-
-## Immich persistence
-
-```
-kubectl create -f immich-ml-data-pv.yaml -f immich-ml-data-pvc.yaml
-```
-
-## Redis
-
-### External
-
-If using an external redis server, retrieve the password to put it in the custom-values.yaml. The template may be improved in the future to directly use the actual Secret.
-
-```
-export REDIS_PASSWORD=$(kubectl get secret --namespace default redis -o jsonpath="{.data.redis-password}" | base64 -d)
-```
-
-### Internal
-
-If using the internal subchart for redis, enable it in the custom-values.yaml and setup an appropriate PersistentVolume for it.
 
 ## Installation
 
@@ -59,9 +47,9 @@ kubectl delete -f immich-ml-data-pvc.yaml -f immich-ml-data-pv.yaml \
 kubectl delete pvc data-immich-postgresql-0
 ```
 
-## Manual backup
+## Backup
 
-(optional) if using the postgresql subchart:
+If using the immich postgresql subchart:
 ```console
 kubectl exec immich-postgresql-0 -- pg_dumpall --clean --if-exists -U immich -d immich -f /tmp/immich_db_backup.sql
 kubectl cp immich-postgresql-0:/tmp/immich_db_backup.sql immich_db_backup.sql
@@ -69,11 +57,10 @@ kubectl cp immich-postgresql-0:/tmp/immich_db_backup.sql immich_db_backup.sql
 
 ## Restore
 
-### External database
-
+If using the immich postgresql subchart:
 ```console
-kubectl cp immich_db_backup.sql postgresql-0:/bitnami/postgresql/
-kubectl exec -it postgresql-0 -- psql -U immich -d immich -f /bitnami/postgresql/immich_db_backup.sql
+kubectl cp immich_db_backup.sql immich-postgresql-0:/bitnami/postgresql/
+kubectl exec -it immich-postgresql-0 -- psql -U immich -d immich -f /bitnami/postgresql/immich_db_backup.sql
 ```
 
 ### "error: invalid command \N"

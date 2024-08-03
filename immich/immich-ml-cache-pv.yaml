@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: PersistentVolume
 metadata:
-  name: immich-psql-data
+  name: immich-ml-cache
 spec:
   capacity:
     storage: 10Gi
@@ -9,5 +9,5 @@ spec:
     - ReadWriteOnce
   persistentVolumeReclaimPolicy: Retain
   hostPath:
-    path: "/mnt/immich/psql-data"
-  storageClassName: "immich-psql"
+    path: "/mnt/immich/ml-cache"
+  storageClassName: ""
