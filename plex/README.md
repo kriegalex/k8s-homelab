@@ -109,7 +109,22 @@ sudo update-grub
 sudo reboot
 ```
 
-#### Install Intel HELM repositories
+#### GPU Plugin installation (no helm)
+
+```console
+# Start NFD - if your cluster doesn't have NFD installed yet
+kubectl apply -k 'https://github.com/intel/intel-device-plugins-for-kubernetes/deployments/nfd?ref=v0.30.0'
+
+# Create NodeFeatureRules for detecting GPUs on nodes
+kubectl apply -k 'https://github.com/intel/intel-device-plugins-for-kubernetes/deployments/nfd/overlays/node-feature-rules?ref=v0.30.0'
+
+# Create GPU plugin daemonset
+kubectl apply -k 'https://github.com/intel/intel-device-plugins-for-kubernetes/deployments/gpu_plugin/overlays/nfd_labeled_nodes?ref=v0.30.0'
+```
+
+#### GPU Plugin installation (with helm)
+
+> This method is not 100% sure to work
 
 Intel GPU helm charts also depends on cert-manager, this guide assumes you installed it already by following the [ingress README](../ingress/README.md). Original instructions by Intel [here](https://github.com/intel/intel-device-plugins-for-kubernetes/blob/main/INSTALL.md).
 
@@ -119,7 +134,7 @@ helm repo add intel https://intel.github.io/helm-charts/ # for device-plugin-ope
 helm repo update
 ```
 
-#### NFD
+##### NFD
 
 Deploy GPU plugin with the help of NFD (Node Feature Discovery). It detects the presence of Intel GPUs and labels them accordingly. GPU plugin’s node selector is used to deploy plugin to nodes which have such a GPU label.
 
@@ -129,14 +144,14 @@ helm install nfd nfd/node-feature-discovery \
   --namespace node-feature-discovery --create-namespace
 ```
 
-#### Operator
+##### Operator
 
 ```
 helm repo add intel https://intel.github.io/helm-charts/
 helm install dp-operator intel/intel-device-plugins-operator --namespace inteldeviceplugins-system --create-namespace
 ```
 
-#### GPU Plugin
+##### GPU Plugin
 
 ```
 helm install intel-device-plugins-gpu intel/intel-device-plugins-gpu \
@@ -148,6 +163,8 @@ You can verify that the plugin has been installed on the expected nodes by searc
 ```
 kubectl get nodes -o=jsonpath="{range .items[*]}{.metadata.name}{'\n'}{' i915: '}{.status.allocatable.gpu\.intel\.com/i915}{'\n'}"
 ```
+
+#### Check the node label
 
 **(IMPORTANT) Check the label of this ARC gpu for pod affinity:**
 
