@@ -16,7 +16,10 @@ ingress:
   annotations: 
    nginx.ingress.kubernetes.io/proxy-body-size: 4G
    cert-manager.io/cluster-issuer: letsencrypt-prod
-  #  # Keep this in sync with the README.md:
+   # preserve source ip
+   nginx.ingress.kubernetes.io/enable-cors: "true"
+   nginx.ingress.kubernetes.io/cors-allow-headers: "X-Forwarded-For"
+   ## Keep this in sync with the README.md:
    nginx.ingress.kubernetes.io/server-snippet: |-
      server_tokens off;
      proxy_hide_header X-Powered-By;
@@ -62,6 +65,9 @@ nextcloud:
     secretName: nextcloud-credentials
     usernameKey: nextcloud-username
     passwordKey: nextcloud-password
+  extraEnv:
+   - name: TRUSTED_PROXIES
+     value: "10.244.0.0/16"
 
 nginx:
   ## You need to set an fpm version of the image for nextcloud if you want to use nginx!
