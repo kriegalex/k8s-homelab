@@ -329,46 +329,39 @@ kubectl apply -f metallb-ippool.yaml
 
 ### NGINX Ingress
 
-In my case, I have an external service called Nginx Proxy Manager already setup, so I don't want to break it. I've setup my domain to point to the IP that MetalLB will give to my plex service. It should be the first in our LAN pool, but please check it to be sure (in case you have other apps running beside Plex).
+You can find the installation steps for [ingress-nginx](https://kubernetes.github.io/ingress-nginx/deploy/) in the [ingress folder](./ingress/README.md).
 
-https://sub.domain.com -> http://10.0.1.2:32400
-
-If you want a nginx as ingress for your kubernetes cluster, you'll need to set it up inside kubernetes. The instructions can be [viewed here](https://kubernetes.github.io/ingress-nginx/deploy/#quick-start).
-
-1. Install
-```
-helm upgrade --install ingress-nginx ingress-nginx \
+TLDR
+```console
+# ingress-nginx install
+helm upgrade --set controller.service.externalTrafficPolicy=Local \
+  --install ingress-nginx ingress-nginx \
   --repo https://kubernetes.github.io/ingress-nginx \
   --namespace ingress-nginx --create-namespace
+# cert-manager repo
+helm repo add jetstack https://charts.jetstack.io --force-update
+# cert-manager install
+helm install \
+  cert-manager jetstack/cert-manager \
+  --namespace cert-manager \
+  --create-namespace \
+  --version v1.15.1 \
+  --set crds.enabled=true
 ```
 
-2. Cert-manager
-
-You will probably also want to manage some certificates using Let's Enrypt. Please have a look at [cert-manager & let's encrypt](https://cert-manager.io/docs/tutorials/acme/nginx-ingress/). 
+Then, define a ClusterIssuer or some Ingress resources, based on your needs. [My setup](./ingress/README.md) uses an AWS Route53 ClusterIssuer.
 
 ## NFS Dynamic Provisioning
 
 [NFS subdir external provisioner](https://github.com/kubernetes-sigs/nfs-subdir-external-provisioner) is an automatic provisioner that use your existing and already configured NFS server to support dynamic provisioning of Kubernetes Persistent Volumes via Persistent Volume Claims. Persistent volumes are provisioned as \${namespace}-\${pvcName}-\${pvName}.
 
+TLDR
 ```
 helm repo add nfs-subdir-external-provisioner https://kubernetes-sigs.github.io/nfs-subdir-external-provisioner/
 helm install nfs-subdir-external-provisioner nfs-subdir-external-provisioner/nfs-subdir-external-provisioner --set nfs.server=10.0.0.2 --set nfs.path=/mnt/user/k8s-data
 ```
 
-Please check the [k8s-nfs-storage](k8s-nfs-storage/README.md) folder for more information on the possible configurable parameters.
-
-### Manual NFS setup
-
-If you don't want to use NFS directly via helm charts, you must setup first your NFS shares manually.
-
-If the media files are on a remote server, you must create NFS shares on your remote server (probably your media NAS). [More information for Ubuntu 22.04 here](https://www.digitalocean.com/community/tutorials/how-to-set-up-an-nfs-mount-on-ubuntu-22-04).
-
-On your client, where kubernetes and your pod will be running, you must edit the `/etc/fstab` so that they mount at each reboot:
-
-Example:
-```
-SERVER_IP:SERVER_PATH CLIENT_PATH nfs auto,nofail,noatime,nolock,intr,tcp,rsize=1048576,wsize=1048576,actimeo=1800 0 0
-```
+Please check the [k8s-nfs-storage](k8s-nfs-storage/provisioner/README.md) folder for more information on the possible configurable parameters.
 
 #### Misc
 
