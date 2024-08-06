@@ -1,6 +1,6 @@
 # Plex
 
-## Plex worker installation
+## Worker node installation
 
 ### Basic installation
 
@@ -34,6 +34,10 @@ kubectl label node WORKER-NODE-NAME node-role.kubernetes.io/worker=worker
 ```
 
 ### Enable hardware transcoding for an Intel ARC GPU
+
+> **IMPORTANT**
+>
+> As of August 2024, only Plex server v1.40.1 works with both hardware transcoding and tone mapping enabled with an Intel ARC GPU. Mine is a A380 and I am running Ubuntu 22.04.4 LTS with HWE 6.5.0 kernel. Intel GPU plugin is v0.30.0 for kubernetes v1.30.
 
 #### Drivers
 If you are on Ubuntu 22.04 LTS, or on a modern Linux distribution with access to kernel >=6.2, the drivers for an Intel ARC GPU should already be working. More details [here](https://dgpu-docs.intel.com/driver/installation.html#ubuntu-install-steps). On Ubuntu 22.04.3 LTS, the kernel 6.5 is easily available with the [HWE kernel](https://askubuntu.com/questions/1442208/how-to-enable-hwe-on-ubuntu-22-04).
@@ -109,7 +113,22 @@ sudo update-grub
 sudo reboot
 ```
 
-#### Install Intel HELM repositories
+#### GPU Plugin installation (no helm)
+
+```console
+# Start NFD - if your cluster doesn't have NFD installed yet
+kubectl apply -k 'https://github.com/intel/intel-device-plugins-for-kubernetes/deployments/nfd?ref=v0.30.0'
+
+# Create NodeFeatureRules for detecting GPUs on nodes
+kubectl apply -k 'https://github.com/intel/intel-device-plugins-for-kubernetes/deployments/nfd/overlays/node-feature-rules?ref=v0.30.0'
+
+# Create GPU plugin daemonset
+kubectl apply -k 'https://github.com/intel/intel-device-plugins-for-kubernetes/deployments/gpu_plugin/overlays/nfd_labeled_nodes?ref=v0.30.0'
+```
+
+#### GPU Plugin installation (with helm)
+
+> This method is not 100% sure to work
 
 Intel GPU helm charts also depends on cert-manager, this guide assumes you installed it already by following the [ingress README](../ingress/README.md). Original instructions by Intel [here](https://github.com/intel/intel-device-plugins-for-kubernetes/blob/main/INSTALL.md).
 
@@ -119,7 +138,7 @@ helm repo add intel https://intel.github.io/helm-charts/ # for device-plugin-ope
 helm repo update
 ```
 
-#### NFD
+##### NFD
 
 Deploy GPU plugin with the help of NFD (Node Feature Discovery). It detects the presence of Intel GPUs and labels them accordingly. GPU plugin’s node selector is used to deploy plugin to nodes which have such a GPU label.
 
@@ -129,14 +148,14 @@ helm install nfd nfd/node-feature-discovery \
   --namespace node-feature-discovery --create-namespace
 ```
 
-#### Operator
+##### Operator
 
 ```
 helm repo add intel https://intel.github.io/helm-charts/
 helm install dp-operator intel/intel-device-plugins-operator --namespace inteldeviceplugins-system --create-namespace
 ```
 
-#### GPU Plugin
+##### GPU Plugin
 
 ```
 helm install intel-device-plugins-gpu intel/intel-device-plugins-gpu \
@@ -148,6 +167,8 @@ You can verify that the plugin has been installed on the expected nodes by searc
 ```
 kubectl get nodes -o=jsonpath="{range .items[*]}{.metadata.name}{'\n'}{' i915: '}{.status.allocatable.gpu\.intel\.com/i915}{'\n'}"
 ```
+
+#### Check the node label
 
 **(IMPORTANT) Check the label of this ARC gpu for pod affinity:**
 
@@ -176,7 +197,7 @@ Follow [these instructions](https://intel.github.io/intel-device-plugins-for-kub
 
 You need to [install Docker](https://docs.docker.com/engine/install/) and the `make` tools for your OS (`apt install build-essential` on Ubuntu/Debian).
 
-## Installation
+## Plex installation
 
 1. Add the Plex helm repo:
 ```
