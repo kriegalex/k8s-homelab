@@ -1,6 +1,6 @@
 # Plex
 
-## Plex worker installation
+## Worker node installation
 
 ### Basic installation
 
@@ -34,6 +34,10 @@ kubectl label node WORKER-NODE-NAME node-role.kubernetes.io/worker=worker
 ```
 
 ### Enable hardware transcoding for an Intel ARC GPU
+
+> **IMPORTANT**
+>
+> As of August 2024, only Plex server v1.40.1 works with both hardware transcoding and tone mapping enabled with an Intel ARC GPU. Mine is a A380 and I am running Ubuntu 22.04.4 LTS with HWE 6.5.0 kernel. Intel GPU plugin is v0.30.0 for kubernetes v1.30.
 
 #### Drivers
 If you are on Ubuntu 22.04 LTS, or on a modern Linux distribution with access to kernel >=6.2, the drivers for an Intel ARC GPU should already be working. More details [here](https://dgpu-docs.intel.com/driver/installation.html#ubuntu-install-steps). On Ubuntu 22.04.3 LTS, the kernel 6.5 is easily available with the [HWE kernel](https://askubuntu.com/questions/1442208/how-to-enable-hwe-on-ubuntu-22-04).
@@ -193,7 +197,7 @@ Follow [these instructions](https://intel.github.io/intel-device-plugins-for-kub
 
 You need to [install Docker](https://docs.docker.com/engine/install/) and the `make` tools for your OS (`apt install build-essential` on Ubuntu/Debian).
 
-## Installation
+## Plex installation
 
 1. Add the Plex helm repo:
 ```
