@@ -25,8 +25,11 @@ sudo mkdir -p /mnt/gluetun/config
 kubectl create secret generic vpn-credentials \
   --from-literal=OPENVPN_USER='your_username' \
   --from-literal=OPENVPN_PASSWORD='your_password' \
+  --from-literal=PUBLICIP_API_TOKEN='your_token' \
   --namespace=default
 ```
+
+> You don't need `PUBLICIP_API_TOKEN`, it just avoids getting the error `too many requests sent for this month from https://ipinfo.io/`. You can get an API token for free from ipinfo with 50K requests per month.
 
 ### Helm
 

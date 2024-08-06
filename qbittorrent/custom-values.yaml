@@ -19,9 +19,17 @@ gluetun:
   env:
     VPN_SERVICE_PROVIDER: "private internet access"
     SERVER_REGIONS: "Switzerland,Netherlands,DE Berlin,DE Frankfurt"
-    VPN_PORT_FORWARDING: true
+    VPN_PORT_FORWARDING: on
+    PORT_FORWARD_ONLY: true # for private internet access provider
+    PUBLICIP_API: ipinfo
   secret:
-    name: vpn-credentials
+    # Name of existing secret to use for OpenVPN and IP API credentials.
+    existingSecret: vpn-credentials
+    # Names of keys in existing secret to use for credentials
+    existingKeys:
+      openvpnUser: OPENVPN_USER
+      openvpnPassword: OPENVPN_PASSWORD
+      publicIpApiToken: PUBLICIP_API_TOKEN
 
 # Persistence
 persistence:
