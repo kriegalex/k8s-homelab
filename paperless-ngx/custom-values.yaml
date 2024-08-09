@@ -1,0 +1,89 @@
+
+image:
+  # -- Image tag
+  tag: 2.11.2
+
+# -- Environment variables [[ref]](https://docs.paperless-ngx.com/configuration/)
+env:
+  # -- Set the container timezone
+  TZ: UTC
+  ## see paperless-ngx documentation: https://docs.paperless-ngx.com/configuration
+  PAPERLESS_SECRET_KEY: "changeme"
+  PAPERLESS_TRUSTED_PROXIES: "10.244.0.0/16" # the POD CIDR
+  PAPERLESS_DATA_DIR: "/usr/src/paperless/media"
+  PAPERLESS_FILENAME_FORMAT: "{created_year}/{correspondent}/{title}"
+  PAPERLESS_CONSUMER_POLLING: "60" # needed if consume if on a NFS share
+  PAPERLESS_CONSUMER_RECURSIVE: true # recurse in the consume subfolders
+  PAPERLESS_CONSUMER_SUBDIRS_AS_TAGS: true # use consume subfolders as tags
+  PAPERLESS_OCR_USER_ARGS: '{"invalidate_digital_signatures": true}' # allow consuming files with digital signature
+
+ingress:
+  # -- Enable and configure ingress settings for the chart under this key.
+  enabled: true
+  className: nginx
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-body-size: 64m
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+  hosts:
+    - host: paperless.domain.com
+      paths:
+        - path: /
+  tls:
+    - secretName: paperless-ingress-tls
+      hosts:
+        - paperless.domain.com
+
+persistence:
+  # -- Configure data volume settings for the chart under this key.
+  data:
+    enabled: false
+    retain: true
+    mountPath: /usr/src/paperless/data
+    existingClaim: ""
+  # -- Configure media volume settings for the chart under this key.
+  media:
+    enabled: true
+    retain: true
+    mountPath: /usr/src/paperless/media
+    existingClaim: "paperless-media"
+  # only use one volume for export and consume
+  # enabling shared disables export and consume volumes
+  # shared reuses export and consume mountPath and subPath
+  shared:
+    enabled: true
+    retain: true
+    existingClaim: "nfs-paperless"
+  # -- Configure export volume settings for the chart under this key.
+  export:
+    enabled: false
+    retain: true
+    mountPath: /usr/src/paperless/export
+    # existingClaim: ""
+    subPath: "export"
+  # -- Configure consume volume settings for the chart under this key.
+  consume:
+    enabled: false
+    retain: true
+    mountPath: /usr/src/paperless/consume
+    # existingClaim: ""
+    subPath: "consume"
+
+# -- Enable and configure postgresql database subchart under this key.
+#    If enabled, the app's db envs will be set for you.
+#    [[ref]](https://github.com/bitnami/charts/tree/main/bitnami/postgresql)
+postgresql:
+  enabled: true
+  auth:
+    database: paperless
+    postgresPassword: changeme
+  primary:
+    persistence:
+      enabled: true
+      existingClaim: "paperless-psql"
+
+# -- Enable and configure redis subchart under this key.
+#    If enabled, the app's Redis env will be set for you.
+#    [[ref]](https://github.com/bitnami/charts/tree/main/bitnami/redis)
+redis:
+  enabled: true
+
