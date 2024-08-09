@@ -48,3 +48,17 @@ kubectl -n immich apply -f nfs-immich-pvc.yaml
 kubectl apply -f nfs-gitea-pv.yaml
 kubectl apply -f nfs-gitea-pvc.yaml
 ```
+
+## Paperless
+
+```console
+kubectl apply -f nfs-paperless-pv.yaml
+kubectl apply -f nfs-paperless-pvc.yaml
+```
+
+## Backup
+
+```console
+kubectl apply -f nfs-backup-pv.yaml
+kubectl apply -f nfs-backup-pvc.yaml
+```
