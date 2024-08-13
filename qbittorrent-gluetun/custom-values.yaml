@@ -10,6 +10,11 @@ qbittorrent:
   webuiPort: 8080
   torrentingPort: 22621
 
+  resources:
+    limits:
+      memory: 8Gi
+
+
 # Gluetun VPN Configuration
 gluetun:
   image: qmcgaw/gluetun
