@@ -1,0 +1,32 @@
+## Hotio qbittorrent image version
+## ref: https://hotio.dev/containers/qbittorrent
+##
+image:
+  tag: legacy # 4.3.9 by default, known to be stable
+
+# Service Configuration
+service:
+  type: LoadBalancer
+
+env:
+  VPN_LAN_NETWORK: "10.0.0.0/24"
+  VPN_PIA_PORT_FORWARD_PERSIST: true
+
+vpn:
+  enabled: true # same as VPN_ENABLED env
+  # Name of existing secret to use for PIA VPN.
+  existingSecret: "vpn-pia-credentials"
+  # Names of keys in existing secret to use for credentials
+  existingKeys:
+    usernameKey: "pia-user"
+    passwordKey: "pia-password"
+
+# Persistence
+persistence:
+  data:
+    existingClaim: "nfs-torrent"
+
+resources: 
+  limits:
+    memory: 8Gi
+
