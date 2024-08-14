@@ -1,71 +1,34 @@
-nameOverride: ""
-fullnameOverride: ""
-
-# qBittorrent Configuration
-qbittorrent:
-  image: linuxserver/qbittorrent
-  tag: latest
-  puid: 1000
-  pgid: 1000
-  webuiPort: 8080
-  torrentingPort: 22621
-
-# Gluetun VPN Configuration
-gluetun:
-  image: qmcgaw/gluetun
-  tag: latest
-  controlServerPort: 8000
-      
-  env:
-    VPN_SERVICE_PROVIDER: "private internet access"
-    SERVER_REGIONS: "Switzerland,Netherlands,DE Berlin,DE Frankfurt"
-    VPN_PORT_FORWARDING: on
-    PORT_FORWARD_ONLY: true # for private internet access provider
-    PUBLICIP_API: ipinfo
-  secret:
-    # Name of existing secret to use for OpenVPN and IP API credentials.
-    existingSecret: vpn-credentials
-    # Names of keys in existing secret to use for credentials
-    existingKeys:
-      openvpnUser: OPENVPN_USER
-      openvpnPassword: OPENVPN_PASSWORD
-      publicIpApiToken: PUBLICIP_API_TOKEN
-
-# Persistence
-persistence:
-  qbittorrent:
-    enabled: true
-    # existingClaim: ""
-    storageClass: ""
-    label: "qbittorrent" # avoid inverting gluetun and qbittorrent
-    size: "1Gi"
-    accessMode: "ReadWriteOnce"
-
-    data:
-      enabled: true
-      existingClaim: "nfs-torrent"
-      # storageClass: ""
-      # size: "500Gi"
-      # accessMode: "ReadWriteOnce"
-      # nfs:
-      #   server: "10.0.0.7"
-      #   path: "/torrent"
-
-  gluetun:
-    enabled: true
-    # existingClaim: ""
-    storageClass: ""
-    label: "gluetun" # avoid inverting gluetun and qbittorrent
-    size: "1Gi"
-    accessMode: "ReadWriteOnce"
-
+## Hotio qbittorrent image version
+## ref: https://hotio.dev/containers/qbittorrent
+##
+image:
+  tag: legacy # 4.3.9 by default, known to be stable
 
 # Service Configuration
 service:
   type: LoadBalancer
-  port: 8080
 
-# Network Policy
-networkPolicy:
-  enabled: true
+env:
+  VPN_LAN_NETWORK: "" # be careful it doesn't conflict with the DNS of your VPN (i.e. PIA is 10.0.0.242/243)
+  VPN_PIA_PORT_FORWARD_PERSIST: true
+  VPN_PIA_PREFERRED_REGION: ""
+
+vpn:
+  enabled: true # same as VPN_ENABLED env
+  provider: pia
+  # Name of existing secret to use for PIA VPN.
+  existingSecret: "vpn-pia-credentials"
+  # Names of keys in existing secret to use for credentials
+  existingKeys:
+    usernameKey: "pia-user"
+    passwordKey: "pia-password"
+
+# Persistence
+persistence:
+  data:
+    existingClaim: "nfs-torrent"
+
+resources: 
+  limits:
+    memory: 8Gi
 

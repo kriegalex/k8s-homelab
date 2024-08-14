@@ -1,0 +1,76 @@
+nameOverride: ""
+fullnameOverride: ""
+
+# qBittorrent Configuration
+qbittorrent:
+  image: linuxserver/qbittorrent
+  tag: latest
+  puid: 1000
+  pgid: 1000
+  webuiPort: 8080
+  torrentingPort: 22621
+
+  resources:
+    limits:
+      memory: 8Gi
+
+
+# Gluetun VPN Configuration
+gluetun:
+  image: qmcgaw/gluetun
+  tag: latest
+  controlServerPort: 8000
+      
+  env:
+    VPN_SERVICE_PROVIDER: "private internet access"
+    SERVER_REGIONS: "Switzerland,Netherlands,DE Berlin,DE Frankfurt"
+    VPN_PORT_FORWARDING: on
+    PORT_FORWARD_ONLY: true # for private internet access provider
+    PUBLICIP_API: ipinfo
+  secret:
+    # Name of existing secret to use for OpenVPN and IP API credentials.
+    existingSecret: vpn-credentials
+    # Names of keys in existing secret to use for credentials
+    existingKeys:
+      openvpnUser: OPENVPN_USER
+      openvpnPassword: OPENVPN_PASSWORD
+      publicIpApiToken: PUBLICIP_API_TOKEN
+
+# Persistence
+persistence:
+  qbittorrent:
+    enabled: true
+    # existingClaim: ""
+    storageClass: ""
+    label: "qbittorrent" # avoid inverting gluetun and qbittorrent
+    size: "1Gi"
+    accessMode: "ReadWriteOnce"
+
+    data:
+      enabled: true
+      existingClaim: "nfs-torrent"
+      # storageClass: ""
+      # size: "500Gi"
+      # accessMode: "ReadWriteOnce"
+      # nfs:
+      #   server: "10.0.0.7"
+      #   path: "/torrent"
+
+  gluetun:
+    enabled: true
+    # existingClaim: ""
+    storageClass: ""
+    label: "gluetun" # avoid inverting gluetun and qbittorrent
+    size: "1Gi"
+    accessMode: "ReadWriteOnce"
+
+
+# Service Configuration
+service:
+  type: LoadBalancer
+  port: 8080
+
+# Network Policy
+networkPolicy:
+  enabled: true
+

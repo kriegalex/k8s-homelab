@@ -1,14 +1,41 @@
-# QBittorrent + Gluetun Chart
+# QBittorrent Chart
 
-A Helm chart for deploying a QBittorrent client that uses a VPN tunnel provided by Gluetun.
+A Helm chart for deploying a QBittorrent client that uses a VPN tunnel provided by PIA.
+
+## Prerequisites
+Before deploying this chart, ensure your Kubernetes cluster meets the following requirements:
+
+1. Kubernetes 1.19+ – This chart uses features that are supported on Kubernetes 1.19 and above.
+3. Helm 3.0+ – Helm 3 is required to manage and deploy this chart.
+3. WireGuard Kernel Module – WireGuard must be available on all nodes in your cluster.
 
 ## Installation
+
+### Allow unsafe sysctl
+
+You need to allow two unsafe sysctl to be set by this chart. To do so, we must modify the existing kubelet configuration on the target worker nodes.
+
+```console
+cat <<EOF | sudo tee -a /var/lib/kubelet/config.yaml
+
+# Add or update the following section:
+allowedUnsafeSysctls:
+  - "net.ipv4.conf.all.src_valid_mark"
+  - "net.ipv6.conf.all.disable_ipv6"
+EOF
+```
+
+Restart the kubelet service:
+
+```console
+sudo systemctl daemon-reload
+sudo systemctl restart kubelet
+```
 
 ### Persistence
 
 On the control plane:
 ```console
-kubectl apply -f gluetun-config-pv.yaml
 kubectl apply -f qbittorrent-config-pv.yaml
 ```
 
@@ -16,20 +43,16 @@ On the applicable worker nodes:
 ```console
 sudo mkdir -p /mnt/qbittorrent/config
 sudo chown 1000:1000 /mnt/qbittorrent/config
-sudo mkdir -p /mnt/gluetun/config
 ```
 
 ### Define a secret for VPN credentials
 
 ```
-kubectl create secret generic vpn-credentials \
-  --from-literal=OPENVPN_USER='your_username' \
-  --from-literal=OPENVPN_PASSWORD='your_password' \
-  --from-literal=PUBLICIP_API_TOKEN='your_token' \
+kubectl create secret generic vpn-pia-credentials \
+  --from-literal=pia-user='your_username' \
+  --from-literal=pia-password='your_password' \
   --namespace=default
 ```
-
-> You don't need `PUBLICIP_API_TOKEN`, it just avoids getting the error `too many requests sent for this month from https://ipinfo.io/`. You can get an API token for free from ipinfo with 50K requests per month.
 
 ### Helm
 
@@ -43,13 +66,13 @@ helm repo update
 2. Inspect & modify the default values (optional)
 
 ```bash
-helm show values k8s-charts/qbittorrent-gluetun > custom-values.yaml
+helm show values k8s-charts/qbittorrent > custom-values.yaml
 ```
 
 3. Install the chart
 
 ```bash
-helm upgrade --install qbit k8s-charts/qbittorrent-gluetun --values custom-values.yaml
+helm upgrade --install qbit k8s-charts/qbittorrent --values custom-values.yaml
 ```
 
 ## QBittorrent login
@@ -57,35 +80,26 @@ helm upgrade --install qbit k8s-charts/qbittorrent-gluetun --values custom-value
 The login is `admin`. The password is visible in the logs of the qbittorent app the first time you start it:
 
 ```
-kubectl logs POD_NAME qbittorrent
+kubectl logs qbit-qbittorrent-POD_NAME
 ```
 
-Replace POD_NAME by the name of your pod (`kubectl get pods`). The two arguments are required because this pod runs two apps.
+Replace POD_NAME by the name of your pod (`kubectl get pods`).
 
-## Gluetun Port Forwarding
+## Port Forwarding
 
-You can get the port obtained from PIA by:
+The port forwarding should be handled automatically by the docker image, if the correct environment variables have been set.
 
-1. Looking at the gluetun app logs
+You can check it in the logs:
 
 ```console
-kubectl logs POD_NAME gluetun
+kubectl logs qbit-qbittorrent-POD_NAME
 ```
 
-2. Check the JSON file in the config persistent volume of your app "gluetun"
-
-In my case, the PV for the config persistent volume of gluetun comes from a NFS share on a remote server (storageClass: "nfs-client").
-
+Expected result:
 ```console
-ssh USER@NFS_SERVER
-cat /NFS_PATH/config/FILE.json
+******** Information ********
+To control qBittorrent, access the WebUI at: http://localhost:8080
+
+[INF] [] [VPN] Forwarded port is [PORT].
+[INF] [] [QBITTORRENT] Updated forwarded port to [PORT].
 ```
-
-3. Connect to the container directly
-
-```console
-kubectl exec --stdin --tty POD_NAME -c gluetun -- /bin/sh
-ls /gluetun/
-```
-
-The `-c` is required because this pod runs two apps.
