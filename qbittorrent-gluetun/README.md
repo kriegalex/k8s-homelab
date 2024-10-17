@@ -2,6 +2,14 @@
 
 A Helm chart for deploying a QBittorrent client that uses a VPN tunnel provided by Gluetun.
 
+**This helm chart has been made as a Proof of Concept.**
+
+**As such, the qbittorrent torrenting port is not updated automatically when it changes in gluetun.**
+
+**Also, it is not guaranteed that no packets will leak if gluetun stops working or crashes. The NetworkPolicy uses is fairly basic.**
+
+> Prefer using the [qbittorrent](../qbittorrent/README.md) chart that uses the `hotio/qbittorrent` docker image. It has built-in wireguard support.
+
 ## Installation
 
 ### Persistence

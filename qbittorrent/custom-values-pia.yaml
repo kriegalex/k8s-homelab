@@ -11,7 +11,7 @@ service:
 env:
   VPN_LAN_NETWORK: "" # be careful it doesn't conflict with the DNS of your VPN (i.e. PIA is 10.0.0.242/243)
   VPN_PIA_PORT_FORWARD_PERSIST: true
-  VPN_PIA_PREFERRED_REGION: ""
+  VPN_PIA_PREFERRED_REGION: "swiss"
 
 vpn:
   enabled: true # same as VPN_ENABLED env

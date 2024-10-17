@@ -45,7 +45,7 @@ sudo mkdir -p /mnt/qbittorrent/config
 sudo chown 1000:1000 /mnt/qbittorrent/config
 ```
 
-### Define a secret for VPN credentials
+### Define a secret for PIA VPN credentials
 
 ```
 kubectl create secret generic vpn-pia-credentials \
@@ -53,6 +53,12 @@ kubectl create secret generic vpn-pia-credentials \
   --from-literal=pia-password='your_password' \
   --namespace=default
 ```
+
+### Setup the wireguard config for Proton
+
+Follow [this guide](https://protonvpn.com/support/wireguard-configurations) to obtain your wireguard configuration.
+
+Copy the wg0.conf file to where your persistence was setup, by default `/mnt/qbittorrent/config/wireguard`.
 
 ### Helm
 

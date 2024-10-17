@@ -1,0 +1,16 @@
+
+image:
+  tag: latest
+  pullPolicy: Always
+
+# Persistent storage settings for data.
+persistence:
+  enabled: true
+  existingClaim: "actual-budget"
+
+ingress:
+  enabled: true
+  ingressClassName: "nginx"
+  annotations: 
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+  url: "https://actual.domain.com"
